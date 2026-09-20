@@ -11,6 +11,7 @@
 new     const           TEAM_SURVIVOR               = 2;
 new     const           TEAM_INFECTED               = 3;
 new     const           ZOMBIECLASS_TANK            = 8;                // Zombie class of the tank, used to find tank after he have been passed to another player
+new     const           ZOMBIECLASS_WITCH           = 7;
 new             bool:   g_bEnabled                  = true;
 new             bool:   g_bAnnounceTankDamage       = false;            // Whether or not tank damage should be announced
 new             bool:   g_bIsTankInPlay             = false;            // Whether or not the tank is active
@@ -22,12 +23,21 @@ new                     g_iTankClient               = 0;                // Which
 new                     g_iLastTankHealth           = 0;                // Used to award the killing blow the exact right amount of damage
 new                     g_iSurvivorLimit            = 4;                // For survivor array in damage print
 new                     g_iDamage[MAXPLAYERS + 1];
+new                     g_iOtherSIDamage[MAXPLAYERS + 1];              // Damage dealt by non-Tank special infected to survivors during the Tank encounter
+new                     g_iPendingOtherSIDamage[MAXPLAYERS + 1];       // Snapshot kept until the Tank facts timer has printed
 new             Float:  g_fMaxTankHealth            = 6000.0;
+new             Float:  g_fOtherSIDelay             = 3.2;
 new             Handle: g_hCvarEnabled              = INVALID_HANDLE;
+new             Handle: g_hCvarOtherSIEnabled       = INVALID_HANDLE;
+new             Handle: g_hCvarIncludeWitch         = INVALID_HANDLE;
+new             Handle: g_hCvarOtherSIDelay         = INVALID_HANDLE;
 new             Handle: g_hCvarTankHealth           = INVALID_HANDLE;
 new             Handle: g_hCvarDifficulty           = INVALID_HANDLE;
 new             Handle: g_hCvarSurvivorLimit        = INVALID_HANDLE;
 new Handle:fwdOnTankDeath                = INVALID_HANDLE;
+new             bool:   g_bOtherSIEnabled            = true;
+new             bool:   g_bIncludeWitch              = false;
+new             Handle: g_hOtherSIDamageTimer        = INVALID_HANDLE;
 
 /*
 * Version 0.6.6
@@ -47,8 +57,8 @@ public Plugin:myinfo =
 {
 	name = "Tank Damage Announce L4D2",
 	author = "Griffin and Blade",
-	description = "Announce damage dealt to tanks by survivors",
-	version = "0.6.7",
+	description = "Announce Tank damage and other special-infected damage dealt to survivors",
+	version = "0.6.10",
 }
 
 public OnPluginStart()
@@ -64,32 +74,66 @@ public OnPluginStart()
 	HookEvent("player_hurt", Event_PlayerHurt);
 	
 	g_hCvarEnabled = CreateConVar("l4d_tankdamage_enabled", "1", "Announce damage done to tanks when enabled", FCVAR_NONE|FCVAR_SPONLY|FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	g_hCvarOtherSIEnabled = CreateConVar("l4d_tankdamage_other_si_enabled", "1", "Announce damage dealt by other special infected to survivors during the Tank encounter", FCVAR_NONE|FCVAR_SPONLY|FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	g_hCvarIncludeWitch = CreateConVar("l4d_tankdamage_include_witch", "0", "Include Witch damage in the other special infected summary", FCVAR_NONE|FCVAR_SPONLY|FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	g_hCvarOtherSIDelay = CreateConVar("l4d_tankdamage_other_si_delay", "3.2", "Seconds to wait before printing other SI damage, so it follows the Tank facts table", FCVAR_NONE|FCVAR_SPONLY|FCVAR_NOTIFY, true, 0.0, true, 10.0);
 	g_hCvarSurvivorLimit = FindConVar("survivor_limit");
 	g_hCvarTankHealth = FindConVar("z_tank_health");
 	g_hCvarDifficulty = FindConVar("z_difficulty");
 	
 	HookConVarChange(g_hCvarEnabled, Cvar_Enabled);
+	HookConVarChange(g_hCvarOtherSIEnabled, Cvar_OtherSIEnabled);
+	HookConVarChange(g_hCvarIncludeWitch, Cvar_IncludeWitch);
+	HookConVarChange(g_hCvarOtherSIDelay, Cvar_OtherSIDelay);
 	HookConVarChange(g_hCvarSurvivorLimit, Cvar_SurvivorLimit);
 	HookConVarChange(g_hCvarTankHealth, Cvar_TankHealth);
 	HookConVarChange(g_hCvarDifficulty, Cvar_TankHealth);
 	HookConVarChange(FindConVar("mp_gamemode"), Cvar_TankHealth);
 	g_bEnabled = GetConVarBool(g_hCvarEnabled);
+	g_bOtherSIEnabled = GetConVarBool(g_hCvarOtherSIEnabled);
+	g_bIncludeWitch = GetConVarBool(g_hCvarIncludeWitch);
+	g_fOtherSIDelay = GetConVarFloat(g_hCvarOtherSIDelay);
 	CalculateTankHealth();
 	
 	g_iOffset_Incapacitated = FindSendPropInfo("Tank", "m_isIncapacitated");
 	fwdOnTankDeath = CreateGlobalForward("OnTankDeath", ET_Event);
+	AutoExecConfig(true, "l4d_tank_damage_announce");
 }
 
 public OnMapStart()
 {
 	// In cases where a tank spawns and map is changed manually, bypassing round end
+	CancelOtherSIDamageTimer();
+	ClearPendingOtherSIDamage();
 	ClearTankDamage();
+	g_bIsTankInPlay = false;
+	g_iTankClient = 0;
+	bPrintedHealth = false;
 
 	PrecacheSound("ui/pickup_secret01.wav");
 }
 
+public OnMapEnd()
+{
+	CancelOtherSIDamageTimer();
+	ClearPendingOtherSIDamage();
+	ClearTankDamage();
+	g_bIsTankInPlay = false;
+	g_iTankClient = 0;
+}
+
+public OnClientPutInServer(client)
+{
+	// Do not let a reconnecting player inherit the previous occupant's totals.
+	g_iDamage[client] = 0;
+	g_iOtherSIDamage[client] = 0;
+}
+
 public OnClientDisconnect_Post(client)
 {
+	g_iDamage[client] = 0;
+	g_iOtherSIDamage[client] = 0;
+
 	if (!g_bIsTankInPlay || client != g_iTankClient) return;
 	CreateTimer(0.1, Timer_CheckTank, client); // Use a delayed timer due to bugs where the tank passes to another player
 }
@@ -97,6 +141,21 @@ public OnClientDisconnect_Post(client)
 void Cvar_Enabled(Handle:convar, const String:oldValue[], const String:newValue[])
 {
 	g_bEnabled = StringToInt(newValue) > 0 ? true:false;
+}
+
+void Cvar_OtherSIEnabled(Handle:convar, const String:oldValue[], const String:newValue[])
+{
+	g_bOtherSIEnabled = StringToInt(newValue) > 0 ? true:false;
+}
+
+void Cvar_IncludeWitch(Handle:convar, const String:oldValue[], const String:newValue[])
+{
+	g_bIncludeWitch = StringToInt(newValue) > 0 ? true:false;
+}
+
+void Cvar_OtherSIDelay(Handle:convar, const String:oldValue[], const String:newValue[])
+{
+	g_fOtherSIDelay = StringToFloat(newValue);
 }
 
 void Cvar_SurvivorLimit(Handle:convar, const String:oldValue[], const String:newValue[])
@@ -140,20 +199,34 @@ void Event_PlayerHurt(Handle:event, const String:name[], bool:dontBroadcast)
 	if (!g_bIsTankInPlay) return; // No tank in play; no damage to record
 	
 	new victim = GetClientOfUserId(GetEventInt(event, "userid"));
-	if (victim != GetTankClient() ||        // Victim isn't tank; no damage to record
-	IsTankDying()                                   // Something buggy happens when tank is dying with regards to damage
-	) return;
-	
 	new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
-	// We only care about damage dealt by survivors, though it can be funny to see
-	// claw/self inflicted hittable damage, so maybe in the future we'll do that
-	if (attacker == 0 ||                                                    // Damage from world?
-	!IsClientInGame(attacker) ||                            // Not sure if this happens
-	GetClientTeam(attacker) != TEAM_SURVIVOR
-	) return;
-	
-	g_iDamage[attacker] += GetEventInt(event, "dmg_health");
-	g_iLastTankHealth = GetEventInt(event, "health");
+	if (attacker == 0 || !IsClientInGame(attacker)) return;
+
+	new damage = GetEventInt(event, "dmg_health");
+	if (damage <= 0) return;
+
+	new tankclient = GetTankClient();
+	new attackerTeam = GetClientTeam(attacker);
+
+	// Survivor damage to the Tank is the original Tank damage table.
+	if (attackerTeam == TEAM_SURVIVOR)
+	{
+		if (victim != tankclient || IsTankDying()) return;
+
+		// The killing blow is assigned in Event_PlayerKilled.
+		g_iDamage[attacker] += damage;
+		g_iLastTankHealth = GetEventInt(event, "health");
+		return;
+	}
+
+	// Other-SI damage is the opposite direction: an eligible infected player
+	// damages a survivor. Tank, Witch (unless enabled), common infected,
+	// world damage and infected-vs-infected damage are excluded.
+	if (!g_bOtherSIEnabled || attackerTeam != TEAM_INFECTED || IsFakeClient(attacker)) return;
+	if (victim == 0 || !IsClientInGame(victim) || GetClientTeam(victim) != TEAM_SURVIVOR) return;
+	if (!IsOtherSpecialInfected(attacker)) return;
+
+	g_iOtherSIDamage[attacker] += damage;
 }
 
 void Event_PlayerKilled(Handle:event, const String:name[], bool:dontBroadcast)
@@ -193,6 +266,8 @@ void Event_TankSpawn(Handle:event, const String:name[], bool:dontBroadcast)
 
 void Event_RoundStart(Handle:event, const String:name[], bool:dontBroadcast)
 {
+	CancelOtherSIDamageTimer();
+	ClearPendingOtherSIDamage();
 	bPrintedHealth = false;
 	g_bIsTankInPlay = false;
 	g_iTankClient = 0;
@@ -207,6 +282,7 @@ void Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
 	{
 		PrintRemainingHealth();
 		PrintTankDamage();
+		ScheduleOtherSpecialDamage();
 	}
 	ClearTankDamage();
 }
@@ -223,7 +299,11 @@ Action:Timer_CheckTank(Handle:timer, any:oldtankclient)
 		return; // Found tank, done
 	}
 	
-	if (g_bAnnounceTankDamage) PrintTankDamage();
+	if (g_bAnnounceTankDamage)
+	{
+		PrintTankDamage();
+		ScheduleOtherSpecialDamage();
+	}
 	ClearTankDamage();
 	g_bIsTankInPlay = false; // No tank in play
 	Call_StartForward(fwdOnTankDeath);
@@ -329,6 +409,82 @@ PrintTankDamage()
 	}
 }
 
+// The Tank facts plugin prints its table from a 3-second DataTimer. Keep a
+// snapshot here and print it slightly later so this table follows those facts.
+ScheduleOtherSpecialDamage()
+{
+	if (!g_bEnabled || !g_bOtherSIEnabled) return;
+
+	for (new i = 1; i <= MaxClients; i++)
+		g_iPendingOtherSIDamage[i] = g_iOtherSIDamage[i];
+
+	CancelOtherSIDamageTimer();
+	g_hOtherSIDamageTimer = CreateTimer(g_fOtherSIDelay, Timer_PrintOtherSpecialDamage, _, TIMER_FLAG_NO_MAPCHANGE);
+}
+
+public Action:Timer_PrintOtherSpecialDamage(Handle:timer)
+{
+	g_hOtherSIDamageTimer = INVALID_HANDLE;
+	PrintOtherSpecialDamage();
+	ClearPendingOtherSIDamage();
+	return Plugin_Stop;
+}
+
+PrintOtherSpecialDamage()
+{
+	if (!g_bEnabled || !g_bOtherSIEnabled) return;
+
+	new client;
+	new damage;
+	new damage_total;
+	new infected_index = -1;
+	new infected_clients[MAXPLAYERS + 1];
+
+	for (client = 1; client <= MaxClients; client++)
+	{
+		if (!IsClientInGame(client) || IsFakeClient(client) || GetClientTeam(client) != TEAM_INFECTED || g_iPendingOtherSIDamage[client] <= 0) continue;
+
+		infected_index++;
+		infected_clients[infected_index] = client;
+		damage_total += g_iPendingOtherSIDamage[client];
+	}
+
+	CPrintToChatAll("{default}[{green}!{default}] {blue}其余特感伤害统计 {default}(坦克局)");
+
+	if (infected_index < 0)
+	{
+		CPrintToChatAll("{default}没有记录到其他特感伤害");
+		return;
+	}
+
+	SortCustom1D(infected_clients, infected_index + 1, SortByOtherSIDamageDesc);
+
+	for (new i = 0; i <= infected_index; i++)
+	{
+		client = infected_clients[i];
+		damage = g_iPendingOtherSIDamage[client];
+		new percent = RoundToNearest((float(damage) / float(damage_total)) * 100.0);
+		CPrintToChatAll("{blue}[{default}%d{blue}] ({default}%d%%{blue}) {olive}%N", damage, percent, client);
+	}
+
+	CPrintToChatAll("{default}其余特感伤害合计: {green}%d", damage_total);
+}
+
+ClearPendingOtherSIDamage()
+{
+	for (new i = 1; i <= MaxClients; i++)
+		g_iPendingOtherSIDamage[i] = 0;
+}
+
+CancelOtherSIDamageTimer()
+{
+	if (g_hOtherSIDamageTimer != INVALID_HANDLE)
+	{
+		KillTimer(g_hOtherSIDamageTimer);
+		g_hOtherSIDamageTimer = INVALID_HANDLE;
+	}
+}
+
 ClearTankDamage()
 {
 	g_iLastTankHealth = 0;
@@ -336,9 +492,20 @@ ClearTankDamage()
 	for (new i = 1; i <= MaxClients; i++) 
 	{ 
 		g_iDamage[i] = 0; 
+		g_iOtherSIDamage[i] = 0;
 		g_iWasTank[i] = 0;
 	}
 	g_bAnnounceTankDamage = false;
+}
+
+bool:IsOtherSpecialInfected(client)
+{
+	if (!IsClientInGame(client) || GetClientTeam(client) != TEAM_INFECTED) return false;
+
+	new zombieclass = GetEntProp(client, Prop_Send, "m_zombieClass");
+	if (zombieclass >= 1 && zombieclass <= 6) return true;
+
+	return g_bIncludeWitch && zombieclass == ZOMBIECLASS_WITCH;
 }
 
 
@@ -391,6 +558,15 @@ int SortByDamageDesc(elem1, elem2, const array[], Handle:hndl)
 	// By damage, then by client index, descending
 	if (g_iDamage[elem1] > g_iDamage[elem2]) return -1;
 	else if (g_iDamage[elem2] > g_iDamage[elem1]) return 1;
+	else if (elem1 > elem2) return -1;
+	else if (elem2 > elem1) return 1;
+	return 0;
+}
+
+int SortByOtherSIDamageDesc(elem1, elem2, const array[], Handle:hndl)
+{
+	if (g_iPendingOtherSIDamage[elem1] > g_iPendingOtherSIDamage[elem2]) return -1;
+	else if (g_iPendingOtherSIDamage[elem2] > g_iPendingOtherSIDamage[elem1]) return 1;
 	else if (elem1 > elem2) return -1;
 	else if (elem2 > elem1) return 1;
 	return 0;

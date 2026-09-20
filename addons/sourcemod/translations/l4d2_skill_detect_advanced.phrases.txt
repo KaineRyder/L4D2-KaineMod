@@ -10,8 +10,8 @@
 	"Advanced_RoundEnd"
 	{
 		"en"	"{green}★ The round is over.{default}"
-		"zho"	"{green}★ 本回合結束。{default}"
-		"chi"	"{green}★ 本回合结束。{default}"
+		"zho"	"本回合落幕！\n正在播放四控专属音乐：Inhuman"
+		"chi"	"本回合落幕！\n正在播放四控专属音乐：Inhuman"
 	}
 	"Advanced_ChargerMulti"
 	{

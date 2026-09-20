@@ -6,7 +6,7 @@
 #include <sdkhooks>
 #include <multicolors>
 
-#define PLUGIN_VERSION "1.2.5-20260914"
+#define PLUGIN_VERSION "1.3.1-20260921-inhuman"
 
 #define MAX_EDICTS 2048
 
@@ -29,6 +29,11 @@
 
 #define MULTI_CONTROL_MIN 2
 #define MULTI_CONTROL_MAX 4
+#define ROUND_END_SOUND "inhuman.mp3"
+#define ROUND_END_DOWNLOAD "sound/inhuman.mp3"
+#define ROUND_END_EMIT_SOUND "inhuman.mp3"
+#define ROUND_END_SOUND_DURATION 5.0
+#define ROUND_END_SOUND_CHANNEL SNDCHAN_AUTO
 
 public Plugin myinfo =
 {
@@ -41,6 +46,7 @@ public Plugin myinfo =
 
 ConVar g_hCvarEnable;
 ConVar g_hCvarMultiControl;
+ConVar g_hCvarRoundEnd;
 ConVar g_hCvarCharger;
 ConVar g_hCvarChargerTeamKill;
 ConVar g_hCvarBoomer;
@@ -52,6 +58,7 @@ ConVar g_hCvarBoomerWindow;
 ConVar g_hCvarTankPunchWindow;
 
 Handle g_hControlTimer;
+Handle g_hRoundEndSoundTimer;
 Handle g_hChargerReset[MAXPLAYERS + 1];
 Handle g_hBoomerReset[MAXPLAYERS + 1];
 Handle g_hTankPunchReset[MAXPLAYERS + 1];
@@ -136,6 +143,10 @@ public void OnPluginStart()
 		"l4d2_skill_advanced_multi_control", "1",
 		"播报特感队伍达到 2/3/4 控的里程碑。",
 		FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	g_hCvarRoundEnd = CreateConVar(
+		"l4d2_skill_advanced_round_end", "1",
+		"Enable round-end announcement when control count reaches alive survivor count.",
+		FCVAR_NOTIFY, true, 0.0, true, 1.0);
 	g_hCvarCharger = CreateConVar(
 		"l4d2_skill_advanced_charger", "1",
 		"播报一次冲锋撞到 2/3/4 名不同幸存者。",
@@ -210,7 +221,8 @@ public void OnPluginStart()
 
 public void OnPluginEnd()
 {
-	delete g_hControlTimer;
+    StopRoundEndSound();
+    delete g_hControlTimer;
 	g_hControlTimer = null;
 
 	for (int client = 1; client <= MaxClients; client++)
@@ -229,6 +241,8 @@ public void OnPluginEnd()
 
 public void OnMapStart()
 {
+    PrepareRoundEndSound();
+
 	for (int entity = 0; entity < MAX_EDICTS; entity++)
 	{
 		g_bHittableHooked[entity] = false;
@@ -241,10 +255,26 @@ public void OnMapStart()
 	CreateTimer(0.20, Timer_HookExistingHittables, _, TIMER_FLAG_NO_MAPCHANGE);
 }
 
+public void OnConfigsExecuted()
+{
+    // Also prepare the stream when the plugin is loaded or reloaded during
+    // an already-running map.
+    PrepareRoundEndSound();
+}
+
+void PrepareRoundEndSound()
+{
+    // inhuman.mp3 is a server-side custom file.  Make it available to
+    // connecting clients and use the same client-side play path as karma.mp3.
+    AddFileToDownloadsTable(ROUND_END_DOWNLOAD);
+    PrecacheGeneric(ROUND_END_DOWNLOAD, true);
+}
+
 public void OnMapEnd()
 {
-	g_bRoundEnded = true;
-	delete g_hControlTimer;
+    g_bRoundEnded = true;
+    StopRoundEndSound();
+    delete g_hControlTimer;
 	g_hControlTimer = null;
 	ResetAllState();
 }
@@ -289,16 +319,18 @@ public void OnEntityDestroyed(int entity)
 
 public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 {
-	g_bRoundEnded = false;
-	ResetAllState();
+    g_bRoundEnded = false;
+    StopRoundEndSound();
+    ResetAllState();
 	ResetHittableOwnerCache();
 	CreateTimer(0.20, Timer_HookExistingHittables, _, TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
-	g_bRoundEnded = true;
-	ResetAllState();
+    g_bRoundEnded = true;
+    StopRoundEndSound();
+    ResetAllState();
 	ResetHittableOwnerCache();
 }
 
@@ -831,9 +863,16 @@ public Action Timer_CheckMultiControl(Handle timer)
 		}
 	}
 
+	int aliveSurvivors = CountAliveSurvivors();
+
 	if (controlCount < MULTI_CONTROL_MIN)
 	{
-		ResetControlState();
+		if (g_hCvarRoundEnd.BoolValue && !g_bControlRoundEndAnnounced && aliveSurvivors > 0 && controlCount >= aliveSurvivors)
+		{
+			AnnounceControlRoundEnd();
+		}
+
+		ResetControlMilestones();
 		return Plugin_Continue;
 	}
 
@@ -853,14 +892,69 @@ public Action Timer_CheckMultiControl(Handle timer)
 
 	g_iControlCount = controlCount;
 
-	int aliveSurvivors = CountAliveSurvivors();
-	if (!g_bControlRoundEndAnnounced && aliveSurvivors > 0 && controlCount >= aliveSurvivors)
+	if (g_hCvarRoundEnd.BoolValue && !g_bControlRoundEndAnnounced && aliveSurvivors > 0 && controlCount >= aliveSurvivors)
 	{
-		CPrintToChatAll("%t", "Advanced_RoundEnd");
-		g_bControlRoundEndAnnounced = true;
+		AnnounceControlRoundEnd();
 	}
 
 	return Plugin_Continue;
+}
+
+void AnnounceControlRoundEnd()
+{
+	CPrintToChatAll("%t", "Advanced_RoundEnd");
+	PlayRoundEndSound();
+	g_bControlRoundEndAnnounced = true;
+}
+
+void PlayRoundEndSound()
+{
+    StopRoundEndSound();
+
+    int sent = 0;
+    for (int client = 1; client <= MaxClients; client++)
+    {
+        if (IsClientInGame(client) && !IsFakeClient(client))
+        {
+            // The unstarred client command is the working path for custom
+            // MP3s on this server.  ROUND_END_SOUND is relative to sound/.
+            ClientCommand(client, "play %s", ROUND_END_SOUND);
+            sent++;
+        }
+    }
+
+    LogMessage("[AdvancedAudio] Four-control round-end music SENT: sample=\"%s\" clients=%d duration=%.2f", ROUND_END_SOUND, sent, ROUND_END_SOUND_DURATION);
+
+    g_hRoundEndSoundTimer = CreateTimer(
+        ROUND_END_SOUND_DURATION,
+        Timer_StopRoundEndSound,
+        _,
+        TIMER_FLAG_NO_MAPCHANGE);
+}
+
+void StopRoundEndSound()
+{
+    delete g_hRoundEndSoundTimer;
+    g_hRoundEndSoundTimer = null;
+    StopRoundEndSoundForClients();
+}
+
+void StopRoundEndSoundForClients()
+{
+    for (int client = 1; client <= MaxClients; client++)
+    {
+        if (IsClientInGame(client))
+        {
+            StopSound(client, ROUND_END_SOUND_CHANNEL, ROUND_END_EMIT_SOUND);
+        }
+    }
+}
+
+public Action Timer_StopRoundEndSound(Handle timer)
+{
+    g_hRoundEndSoundTimer = null;
+    StopRoundEndSoundForClients();
+    return Plugin_Stop;
 }
 
 void StartControlTimer()
@@ -1668,9 +1762,14 @@ int FindAnyTank()
 
 void ResetControlState()
 {
+	ResetControlMilestones();
+	g_bControlRoundEndAnnounced = false;
+}
+
+void ResetControlMilestones()
+{
 	g_iControlCount = 0;
 	g_iControlAnnounced = 0;
-	g_bControlRoundEndAnnounced = false;
 }
 
 void ResetChargerState(int client, bool cancelTimer = true)

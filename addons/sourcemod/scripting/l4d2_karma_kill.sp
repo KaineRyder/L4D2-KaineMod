@@ -10,7 +10,7 @@
 #undef REQUIRE_PLUGIN
 #tryinclude <fuckZones>
 
-#define PLUGIN_VERSION "1.1h-2024/8/11"
+#define PLUGIN_VERSION "1.2.3-20260921-clientplay"
 
 #define CVAR_FLAGS                    FCVAR_NOTIFY
 #define CVAR_FLAGS_PLUGIN_VERSION     FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY
@@ -36,16 +36,24 @@ float FLING_SECONDS_NEEDED_AGAINST_LEDGE_HANG                 = 0.3;
 float CHARGE_CHECKING_INTERVAL = 0.1;
 
 float ANGLE_STRAIGHT_DOWN[3] = { 90.0, 0.0, 0.0 };
-char  SOUND_EFFECT[]         = "./level/loud/climber.wav";
+
+#define DEFAULT_SOUND_EFFECT "level/loud/climber.wav"
+#define KARMA_SOUND_CHANNEL SNDCHAN_AUTO
 
 ConVar cvarisEnabled/*, cvarNoFallDamageProtectFromIncap*/;
 ConVar karmaJump, karmaAwardConfirmed, karmaDamageAwardConfirmed, karmaOnlyConfirmed,
 	karmaSlowTimeOnServer, karmaSlowTimeOnCouple, karmaSlowSpeed, cvarModeSwitch,
-	cvarCooldown, cvarAllowDefib;
+	cvarCooldown, cvarAllowDefib, cvarKarmaSound, cvarKarmaSoundDownload,
+	cvarKarmaSoundDuration;
 bool g_bEnabled, g_bkarmaJump, g_bkarmaAwardConfirmed, g_bkarmaOnlyConfirmed,
 	/*g_bNoFallDamageProtectFromIncap,*/ g_bModeSwitch, g_bAllowDefib;
 int g_ikarmaDamageAwardConfirmed;
 float g_fkarmaSlowTimeOnServer, g_fkarmaSlowTimeOnCouple, g_fkarmaSlowSpeed, g_fCooldown;
+char g_sKarmaSound[PLATFORM_MAX_PATH];
+char g_sKarmaEmitSound[PLATFORM_MAX_PATH];
+bool g_bKarmaSoundDownload;
+float g_fKarmaSoundDuration;
+Handle g_hKarmaSoundTimer = INVALID_HANDLE;
 
 ConVar cvarFatalFallDamage;
 float g_fFatalFallDamage;
@@ -344,6 +352,9 @@ public void OnPluginStart()
 	karmaSlowTimeOnCouple            = CreateConVar("l4d2_karma_kill_slowtime_on_couple", 		"3.0", 	"If _kill_slowmode = 1, How long does Time get slowed for the karma couple (Infected atacker and Survivor victim only)", CVAR_FLAGS, true, 1.0);
 	karmaSlowSpeed                   = CreateConVar("l4d2_karma_kill_slowspeed", 				"0.2", 	"How slow Time gets. Hardwired to minimum 0.03 or the server crashes", CVAR_FLAGS, true, 0.03);
 	cvarisEnabled                    = CreateConVar("l4d2_karma_kill_enabled", 					"1", 	"Turn Karma Kills on and off ", CVAR_FLAGS, true, 0.0, true, 1.0);
+	cvarKarmaSound                   = CreateConVar("l4d2_karma_kill_sound_file", 				DEFAULT_SOUND_EFFECT, "Sound file relative to sound/. Empty disables the karma sound.", CVAR_FLAGS);
+	cvarKarmaSoundDownload            = CreateConVar("l4d2_karma_kill_sound_download", 			"0", "Add the karma sound to the client download table. Enable for custom server music.", CVAR_FLAGS, true, 0.0, true, 1.0);
+	cvarKarmaSoundDuration             = CreateConVar("l4d2_karma_kill_sound_duration", 			"0.0", "Stop the karma sound after this many seconds. 0 keeps the natural sound length.", CVAR_FLAGS, true, 0.0);
 	//cvarNoFallDamageProtectFromIncap = CreateConVar("l4d2_karma_kill_no_fall_damage_protect_from_incap", "1", "If you take more than 224 points of damage while incapacitated, you die.", CVAR_FLAGS, true, 0.0, true, 1.0);
 	cvarModeSwitch                   = CreateConVar("l4d2_karma_kill_slowmode", 				"0", 	"0 - Entire Server gets slowed, 1 - Only Infected atacker and Survivor victim do", CVAR_FLAGS, true, 0.0, true, 1.0);
 	cvarCooldown                     = CreateConVar("l4d2_karma_kill_cooldown", 				"0.0", 	"If slowmode is 0, how long does it take for the next karma to freeze the entire map. Begins counting from the end of the previous freeze", CVAR_FLAGS, true, 0.0);
@@ -365,9 +376,17 @@ public void OnPluginStart()
 	cvarModeSwitch.AddChangeHook(ConVarChanged_Cvars);
 	cvarCooldown.AddChangeHook(ConVarChanged_Cvars);
 	cvarAllowDefib.AddChangeHook(ConVarChanged_Cvars);
+	cvarKarmaSound.AddChangeHook(ConVarChanged_Cvars);
+	cvarKarmaSoundDownload.AddChangeHook(ConVarChanged_Cvars);
+	cvarKarmaSoundDuration.AddChangeHook(ConVarChanged_Cvars);
 
 	if(bLate)
 	{
+		// A plugin reloaded during an active map does not necessarily receive
+		// OnMapStart again. Treat it as map-started so custom sounds are
+		// precached after the config is executed below.
+		g_bMapStarted = true;
+
 		for (int i = 1; i <= MaxClients; i++)
 		{
 			if (!IsClientInGame(i))
@@ -378,6 +397,14 @@ public void OnPluginStart()
 
 		g_bRoundStarted = true;
 	}
+}
+
+public void OnConfigsExecuted()
+{
+	// This also covers a mid-map plugin reload, where OnMapStart is not
+	// called again and the configured custom sound still needs preparing.
+	GetCvars();
+	PrepareKarmaSound();
 }
 
 public void OnClientPutInServer(int client)
@@ -448,6 +475,7 @@ public void OnClientDisconnect(int client)
 
 public void OnMapEnd()
 {
+	StopKarmaSound();
 	g_bMapStarted = false;
 }
 
@@ -455,8 +483,7 @@ public void OnMapStart()
 {
 	g_bMapStarted = true;
 
-	PrefetchSound(SOUND_EFFECT);
-	PrecacheSound(SOUND_EFFECT);
+	PrepareKarmaSound();
 
 	for (int i = 1; i <= MaxClients; i++)
 	{
@@ -483,6 +510,7 @@ public void OnMapStart()
 
 void ConVarChanged_Cvars(Handle hCvar, const char[] sOldVal, const char[] sNewVal)
 {
+	StopKarmaSound();
 	GetCvars();
 }
 
@@ -501,6 +529,144 @@ void GetCvars()
 	g_bModeSwitch = cvarModeSwitch.BoolValue;
 	g_fCooldown = cvarCooldown.FloatValue;
 	g_bAllowDefib = cvarAllowDefib.BoolValue;
+	cvarKarmaSound.GetString(g_sKarmaSound, sizeof(g_sKarmaSound));
+	g_bKarmaSoundDownload = cvarKarmaSoundDownload.BoolValue;
+	g_fKarmaSoundDuration = cvarKarmaSoundDuration.FloatValue;
+
+	if (g_bMapStarted)
+	{
+		PrepareKarmaSound();
+	}
+}
+
+void PrepareKarmaSound()
+{
+	g_sKarmaEmitSound[0] = '\0';
+
+	if (g_sKarmaSound[0] == '\0')
+	{
+		return;
+	}
+
+	if (IsMp3Sound(g_sKarmaSound))
+	{
+		// The client can play the downloaded MP3 through its normal sound path.
+		// Keep the original EmitSoundToAll broadcast path; do not use the
+		// asterisk streaming form because it is not playable on this client.
+		strcopy(g_sKarmaEmitSound, sizeof(g_sKarmaEmitSound), g_sKarmaSound);
+		char genericPath[PLATFORM_MAX_PATH];
+		FormatEx(genericPath, sizeof(genericPath), "sound/%s", g_sKarmaSound);
+		PrecacheGeneric(genericPath, true);
+		FakePrecacheSound(g_sKarmaEmitSound);
+	}
+	else
+	{
+		strcopy(g_sKarmaEmitSound, sizeof(g_sKarmaEmitSound), g_sKarmaSound);
+		PrefetchSound(g_sKarmaSound);
+		PrecacheSound(g_sKarmaSound);
+	}
+
+	if (g_bKarmaSoundDownload)
+	{
+		char downloadPath[PLATFORM_MAX_PATH];
+		FormatEx(downloadPath, sizeof(downloadPath), "sound/%s", g_sKarmaSound);
+		AddFileToDownloadsTable(downloadPath);
+	}
+}
+
+bool IsMp3Sound(const char[] sound)
+{
+	int length = strlen(sound);
+	return length >= 4 && StrContains(sound, ".mp3", false) == length - 4;
+}
+
+void FakePrecacheSound(const char[] sound)
+{
+	int table = FindStringTable("soundprecache");
+	if (table == INVALID_STRING_TABLE)
+	{
+		return;
+	}
+
+	if (FindStringIndex(table, sound) == INVALID_STRING_INDEX)
+	{
+		bool locked = LockStringTables(false);
+		AddToStringTable(table, sound);
+		LockStringTables(locked);
+	}
+}
+
+void PlayKarmaSound()
+{
+	LogMessage("[KarmaAudio] PlayKarmaSound ENTER: configured=\"%s\" emit=\"%s\" duration=%.2f", g_sKarmaSound, g_sKarmaEmitSound, g_fKarmaSoundDuration);
+
+	if (g_sKarmaEmitSound[0] == '\0')
+	{
+		LogMessage("[KarmaAudio] PlayKarmaSound SKIP: emitted sound path is empty.");
+		return;
+	}
+
+	StopKarmaSound();
+	if (IsMp3Sound(g_sKarmaSound))
+	{
+		int sent = 0;
+		for (int client = 1; client <= MaxClients; client++)
+		{
+			if (IsClientInGame(client) && !IsFakeClient(client))
+			{
+				// This is the same client-side command that was verified manually.
+				ClientCommand(client, "play %s", g_sKarmaSound);
+				sent++;
+			}
+		}
+
+		LogMessage("[KarmaAudio] ClientCommand play SENT: sample=\"%s\" clients=%d", g_sKarmaSound, sent);
+	}
+	else
+	{
+		// Preserve the original direct broadcast path for WAV and other normal sounds.
+		EmitSoundToAll(g_sKarmaEmitSound);
+		LogMessage("[KarmaAudio] EmitSoundToAll SENT: sample=\"%s\"", g_sKarmaEmitSound);
+	}
+
+	if (g_fKarmaSoundDuration > 0.0)
+	{
+		g_hKarmaSoundTimer = CreateTimer(
+			g_fKarmaSoundDuration,
+			Timer_StopKarmaSound,
+			_,
+			TIMER_FLAG_NO_MAPCHANGE);
+	}
+}
+
+void StopKarmaSound()
+{
+	delete g_hKarmaSoundTimer;
+	g_hKarmaSoundTimer = INVALID_HANDLE;
+	StopKarmaSoundForClients();
+}
+
+void StopKarmaSoundForClients()
+{
+	if (g_sKarmaEmitSound[0] == '\0')
+	{
+		return;
+	}
+
+	for (int client = 1; client <= MaxClients; client++)
+	{
+		if (IsClientInGame(client))
+		{
+			StopSound(client, KARMA_SOUND_CHANNEL, g_sKarmaEmitSound);
+		}
+	}
+}
+
+public Action Timer_StopKarmaSound(Handle timer)
+{
+	g_hKarmaSoundTimer = INVALID_HANDLE;
+	StopKarmaSoundForClients();
+	return Plugin_Stop;
 }
 
 public void Plugins_OnJockeyJumpPost(int victim, int jockey, float fForce)
@@ -1860,7 +2026,7 @@ void AnnounceKarma(int client, int victim, int type, bool bBird, bool bKillConfi
 	{
 		BlockAnnounce[victim] = true;
 
-		EmitSoundToAll(SOUND_EFFECT);
+		PlayKarmaSound();
 
 		if (g_bModeSwitch || cooldownTimer != INVALID_HANDLE)
 		{
@@ -1879,6 +2045,10 @@ void AnnounceKarma(int client, int victim, int type, bool bBird, bool bKillConfi
 		{
 			CPrintToChatAll("[{olive}TS{default}] {green}%s{default} %s %s {olive}%N{default}, for great justice!!", LastKarma[victim][type].artistName, bBird ? "Bird" : "Karma", KarmaName, victim);
 		}
+	}
+	else
+	{
+		LogMessage("[KarmaAudio] PlayKarmaSound NOT CALLED: block=%d only_confirmed=%d kill_confirmed=%d victim=%d type=%d", BlockAnnounce[victim], g_bkarmaOnlyConfirmed, bKillConfirmed, victim, type);
 	}
 
 	if (type != KT_Jump)

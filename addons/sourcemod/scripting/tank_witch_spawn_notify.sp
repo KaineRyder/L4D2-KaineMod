@@ -5,7 +5,7 @@
 #include <sdktools>
 #include <sdkhooks>
 #include <multicolors>
-#define PLUGIN_VERSION			"1.0"
+#define PLUGIN_VERSION			"1.0.1-20260920"
 #define PLUGIN_NAME			    "tank_witch_spawn_notify"
 #define DEBUG 0
 
@@ -41,7 +41,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 #define TRANSLATION_FILE		PLUGIN_NAME ... ".phrases"
 
-#define SOUND                         "ui/pickup_secret01.wav"
+#define WITCH_SOUND                   "level/scoreregular.wav"
 
 #define TEAM_INFECTED                 3
 
@@ -58,7 +58,7 @@ public void OnPluginStart()
     g_hCvarTankAnnounce     = CreateConVar(PLUGIN_NAME ... "_tank_announce",       "1",   "If 1, announce chat when tank spawns", CVAR_FLAGS, true, 0.0, true, 1.0);
     g_hCvarWitchAnnounce    = CreateConVar(PLUGIN_NAME ... "_witch_announce",      "1",   "If 1, announce chat when witch spawns", CVAR_FLAGS, true, 0.0, true, 1.0);
     g_hCvarTankSound        = CreateConVar(PLUGIN_NAME ... "_tank_sound_file",     "ui/pickup_secret01.wav",   "Tank sound file (relative to to sound/, empty=Disable)", CVAR_FLAGS);
-    g_hCvarWitchSound       = CreateConVar(PLUGIN_NAME ... "_witch_sound_file",    "ui/pickup_secret01.wav",   "Witch sound file (relative to to sound/, empty=Disable)", CVAR_FLAGS);
+    g_hCvarWitchSound       = CreateConVar(PLUGIN_NAME ... "_witch_sound_file",    WITCH_SOUND,                "Witch sound file (relative to to sound/, empty=Disable)", CVAR_FLAGS);
     CreateConVar(                          PLUGIN_NAME ... "_version",             PLUGIN_VERSION, PLUGIN_NAME ... " Plugin Version", CVAR_FLAGS_PLUGIN_VERSION);
     AutoExecConfig(true,                   PLUGIN_NAME);
 
@@ -101,6 +101,7 @@ void GetCvars()
 public void OnMapStart()
 {
     g_bMapStarted = true;
+    GetCvars();
 }
 
 public void OnMapEnd()
