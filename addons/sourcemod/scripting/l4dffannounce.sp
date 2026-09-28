@@ -107,7 +107,7 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast)
 
 	if(GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) //人類 kill &友傷
 	{
-		CPrintToChatAll("[{olive}TS{default}] %t", "KILL", attacker, victim);
+		CPrintToChatAll("%t %t", "Tag", "KILL", attacker, victim);
 	}	
 }
 
@@ -214,23 +214,23 @@ Action AnnounceFF(Handle timer, int attacker) //Called if the attacker did not f
 					case 1:
 					{
 						if (IsClientInGame(attacker) && !IsFakeClient(attacker))
-							CPrintToChat(attacker, "[{olive}TS{default}] %T", "FF_dealt (C)", attacker, g_iDamageTempCache[attacker][i], sVictimName, g_iTotalDamage[attacker][i]);
+							CPrintToChat(attacker, "%T %T", "Tag", attacker, "FF_dealt (C)", attacker, g_iDamageTempCache[attacker][i], sVictimName, g_iTotalDamage[attacker][i]);
 						if (IsClientInGame(i) && !IsFakeClient(i))
-							CPrintToChat(i, "[{olive}TS{default}] %T", "FF_receive (C)", i, sAttackerName, g_iDamageTempCache[attacker][i], g_iTotalDamage[attacker][i]);
+							CPrintToChat(i, "%T %T", "Tag", i, "FF_receive (C)", i, sAttackerName, g_iDamageTempCache[attacker][i], g_iTotalDamage[attacker][i]);
 					}
 					case 2:
 					{
 						if (IsClientInGame(attacker) && !IsFakeClient(attacker))
-							PrintHintText(attacker, "%T", "FF_dealt", attacker, g_iDamageTempCache[attacker][i], sVictimName, g_iTotalDamage[attacker][i]);
+							PrintHintText(attacker, "%T %T", "Tag", attacker, "FF_dealt", attacker, g_iDamageTempCache[attacker][i], sVictimName, g_iTotalDamage[attacker][i]);
 						if (IsClientInGame(i) && !IsFakeClient(i))
-							PrintHintText(i, "%T", "FF_receive", i, sAttackerName, g_iDamageTempCache[attacker][i], g_iTotalDamage[attacker][i]);
+							PrintHintText(i, "%T %T", "Tag", i, "FF_receive", i, sAttackerName, g_iDamageTempCache[attacker][i], g_iTotalDamage[attacker][i]);
 					}
 					case 3:
 					{
 						if (IsClientInGame(attacker) && !IsFakeClient(attacker))
-							PrintCenterText(attacker, "%T", "FF_dealt", attacker, g_iDamageTempCache[attacker][i], sVictimName, g_iTotalDamage[attacker][i]);
+							PrintCenterText(attacker, "%T %T", "Tag", attacker, "FF_dealt", attacker, g_iDamageTempCache[attacker][i], sVictimName, g_iTotalDamage[attacker][i]);
 						if (IsClientInGame(i) && !IsFakeClient(i))
-							PrintCenterText(i, "%T", "FF_receive", i, sAttackerName, g_iDamageTempCache[attacker][i], g_iTotalDamage[attacker][i]);
+							PrintCenterText(i, "%T %T", "Tag", i, "FF_receive", i, sAttackerName, g_iDamageTempCache[attacker][i], g_iTotalDamage[attacker][i]);
 					}
 					default:
 					{

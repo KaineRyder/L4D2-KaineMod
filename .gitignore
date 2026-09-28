@@ -25,5 +25,9 @@ $RECYCLE.BIN/
 # Visual Studio Code files
 /.vscode
 
+# Codex local configuration and build artifacts
+/.codex/
+/.codex-build/
+
 # Firecrawl working cache
 .firecrawl/

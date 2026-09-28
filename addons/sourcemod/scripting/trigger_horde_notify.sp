@@ -121,11 +121,11 @@ MRESReturn DTR_OnMapInvokedPanicEvent_Post(int pThis, Handle hReturn, Handle hPa
     {
         if(type_Horde == 1)
         {
-            if(g_bAlarmCarNotify) CPrintToChatAll("[{olive}TS{default}] %t", "Alarmed_Car", client);
+            if(g_bAlarmCarNotify) CPrintToChatAll("%t %t", "Tag", "Alarmed_Car", client);
         }
         else
         {
-            CPrintToChatAll("[{olive}TS{default}] %t", "Horde", client);
+            CPrintToChatAll("%t %t", "Tag", "Horde", client);
         }
 
         g_fTriggerHordeTime = GetEngineTime() + g_fColdDown;
@@ -179,7 +179,7 @@ public void Event_create_panic_event(Event event, const char[] name, bool dontBr
     {
         if(g_fTriggerHordeTime < GetEngineTime())
         {
-            CPrintToChatAll("[{olive}TS{default}] %t", "Horde", client);
+            CPrintToChatAll("%t %t", "Tag", "Horde", client);
             g_fTriggerHordeTime = GetEngineTime() + g_fColdDown;
         }
     }
@@ -195,7 +195,7 @@ public void Event_Finale_Start(Event event, const char[] name, bool dontBroadcas
 {
     if(g_bRescueStart) return;
     
-    CPrintToChatAll("%t", "Final Rescue Start");
+    CPrintToChatAll("%t %t", "Tag", "Final Rescue Start");
     
     g_bRescueStart = true;
 }
@@ -204,7 +204,7 @@ void OnFinalTriggered(const char[] output, int caller, int activator, float dela
 {
     if(activator > 0 && activator < MaxClients+1 && IsClientInGame(activator))
     {
-        CPrintToChatAll("[{olive}TS{default}] %t", "Final Rescue", activator);
+        CPrintToChatAll("%t %t", "Tag", "Final Rescue", activator);
     }
 
     UnhookSingleEntityOutput(caller, "UseStart", OnFinalTriggered);

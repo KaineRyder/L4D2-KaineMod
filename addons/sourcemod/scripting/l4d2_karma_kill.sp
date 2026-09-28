@@ -92,6 +92,7 @@ enum struct enLastKarma
 {
 	// Artist is 0 when no karma is found, and set to -1 when a karma artist is not present
 	int  artist;
+	int  artistClass;
 	char artistName[64];
 	char artistSteamId[35];
 
@@ -316,6 +317,8 @@ void OnCheckKarmaZoneTouch(int victim, int entity, const char[] zone_name, int p
 
 public void OnPluginStart()
 {
+	LoadTranslations("l4d2_karma_kill.phrases");
+
 	HookEvent("player_jump", event_PlayerJump, EventHookMode_Post);
 
 	HookEvent("player_bot_replace", event_BotReplacesAPlayer, EventHookMode_Post);
@@ -1987,6 +1990,36 @@ bool TraceEnum_TriggerHurt(int entity, ArrayList aEntities)
 
 // Client will be negative if the karma is done by a bot and the bot left the server.
 // In that case, client = -1 * zombieclass
+void GetKarmaAnnouncementPhrase(int type, char[] phrase, int phraseLength)
+{
+	switch (type)
+	{
+		case KT_Charge: strcopy(phrase, phraseLength, "Karma_Charge");
+		case KT_Impact: strcopy(phrase, phraseLength, "Karma_Impact");
+		case KT_Jockey: strcopy(phrase, phraseLength, "Karma_Jockey");
+		case KT_Slap: strcopy(phrase, phraseLength, "Karma_Slap");
+		case KT_Punch: strcopy(phrase, phraseLength, "Karma_Punch");
+		case KT_Smoke: strcopy(phrase, phraseLength, "Karma_Smoke");
+		case KT_Stagger: strcopy(phrase, phraseLength, "Karma_Stagger");
+		default: strcopy(phrase, phraseLength, "Karma_Special");
+	}
+}
+
+void GetKarmaAnnouncementClass(int zombieClass, char[] className, int classNameLength)
+{
+	switch (zombieClass)
+	{
+		case L4D2ZombieClass_Smoker: strcopy(className, classNameLength, "Smoker");
+		case L4D2ZombieClass_Boomer: strcopy(className, classNameLength, "Boomer");
+		case L4D2ZombieClass_Hunter: strcopy(className, classNameLength, "Hunter");
+		case L4D2ZombieClass_Spitter: strcopy(className, classNameLength, "Spitter");
+		case L4D2ZombieClass_Jockey: strcopy(className, classNameLength, "Jockey");
+		case L4D2ZombieClass_Charger: strcopy(className, classNameLength, "Charger");
+		case L4D2ZombieClass_Tank: strcopy(className, classNameLength, "Tank");
+		default: strcopy(className, classNameLength, "特感");
+	}
+}
+
 void AnnounceKarma(int client, int victim, int type, bool bBird, bool bKillConfirmed, Handle hDontKillHandle = INVALID_HANDLE, Handle hDontKillHandle2 = INVALID_HANDLE)
 {
 	char KarmaName[64];
@@ -2039,11 +2072,14 @@ void AnnounceKarma(int client, int victim, int type, bool bBird, bool bKillConfi
 
 		if (type == KT_Jump)
 		{
-			CPrintToChatAll("[{olive}TS{default}] {green}%s{olive} [%s] {default} %s %s {olive}%N{default}, for great justice!!", LastKarma[victim][type].artistName, LastKarma[victim][type].artistSteamId, bBird ? "Bird" : "Karma", KarmaName, victim);
+			CPrintToChatAll("%t", "Karma_Survivor", LastKarma[victim][type].artistName);
 		}
 		else
 		{
-			CPrintToChatAll("[{olive}TS{default}] {green}%s{default} %s %s {olive}%N{default}, for great justice!!", LastKarma[victim][type].artistName, bBird ? "Bird" : "Karma", KarmaName, victim);
+			char sPhrase[40], sClassName[16];
+			GetKarmaAnnouncementPhrase(type, sPhrase, sizeof(sPhrase));
+			GetKarmaAnnouncementClass(LastKarma[victim][type].artistClass, sClassName, sizeof(sClassName));
+			CPrintToChatAll("%t", sPhrase, LastKarma[victim][type].artistName, sClassName, victim);
 		}
 	}
 	else
@@ -2686,6 +2722,7 @@ int FindEntityByTargetname(int startEnt, const char[] TargetName, bool caseSensi
 void AttachKarmaToVictim(int victim, int attacker, int type, bool bLastPos = false)
 {
 	LastKarma[victim][type].artist = attacker;
+	LastKarma[victim][type].artistClass = attacker > 0 && IsClientInGame(attacker) ? view_as<int>(L4D2_GetPlayerZombieClass(attacker)) : -1;
 	GetClientName(attacker, LastKarma[victim][type].artistName, sizeof(enLastKarma::artistName));
 	GetClientAuthId(attacker, AuthId_Steam2, LastKarma[victim][type].artistSteamId, sizeof(enLastKarma::artistSteamId));
 
@@ -2794,6 +2831,7 @@ void TransferKarmaToVictim(int toVictim, int fromVictim)
 		{
 			// .artist is swapped because someone needs to be credited in rewards..
 			LastKarma[toVictim][i].artist          = toVictim;
+			LastKarma[toVictim][i].artistClass     = LastKarma[fromVictim][i].artistClass;
 			LastKarma[toVictim][i].artistName      = LastKarma[fromVictim][i].artistName;
 			LastKarma[toVictim][i].artistSteamId   = LastKarma[fromVictim][i].artistSteamId;
 			LastKarma[toVictim][i].lastPos         = LastKarma[fromVictim][i].lastPos;

@@ -1,0 +1,66 @@
+"Phrases"
+{
+	"Karma_Charge"
+	{
+		"#format"	"{1:s},{2:s},{3:N}"
+		"en"	"{olive}[Karma Kill]{default} {green}{1}{default} ({2}) rushed a survivor off the map and karmad {olive}{3}{default}. Lao Da, I miss you!!!!"
+		"zho"	"{olive}[牢大復蘇]{default}{green}{1}{default}({2}) 帶著生還者衝鋒打秒了{olive}{3}{default}，牢大我想你了！！！！"
+		"chi"	"{olive}[牢大复苏]{default}{green}{1}{default}({2}) 带着生还者冲锋打秒了{olive}{3}{default}，牢大我想你了！！！！"
+	}
+	"Karma_Impact"
+	{
+		"#format"	"{1:s},{2:s},{3:N}"
+		"en"	"{olive}[Karma Kill]{default} {green}{1}{default} ({2}) knocked {olive}{3}{default} flying with an impact. Lao Da, I miss you!!!!"
+		"zho"	"{olive}[牢大復蘇]{default}{green}{1}{default}({2}) 撞飛/震下去打秒了{olive}{3}{default}，牢大我想你了！！！！"
+		"chi"	"{olive}[牢大复苏]{default}{green}{1}{default}({2}) 撞飞/震下去打秒了{olive}{3}{default}，牢大我想你了！！！！"
+	}
+	"Karma_Jockey"
+	{
+		"#format"	"{1:s},{2:s},{3:N}"
+		"en"	"{olive}[Karma Kill]{default} {green}{1}{default} ({2}) rode {olive}{3}{default} to death. Lao Da, I miss you!!!!"
+		"zho"	"{olive}[牢大復蘇]{default}{green}{1}{default}({2}) 騎乘打秒了{olive}{3}{default}，牢大我想你了！！！！"
+		"chi"	"{olive}[牢大复苏]{default}{green}{1}{default}({2}) 骑乘打秒了{olive}{3}{default}，牢大我想你了！！！！"
+	}
+	"Karma_Slap"
+	{
+		"#format"	"{1:s},{2:s},{3:N}"
+		"en"	"{olive}[Karma Kill]{default} {green}{1}{default} ({2}) blew {olive}{3}{default} away with a Boomer blast. Lao Da, I miss you!!!!"
+		"zho"	"{olive}[牢大復蘇]{default}{green}{1}{default}({2}) 胖子爆炸打秒了{olive}{3}{default}，牢大我想你了！！！！"
+		"chi"	"{olive}[牢大复苏]{default}{green}{1}{default}({2}) 胖子爆炸打秒了{olive}{3}{default}，牢大我想你了！！！！"
+	}
+	"Karma_Punch"
+	{
+		"#format"	"{1:s},{2:s},{3:N}"
+		"en"	"{olive}[Karma Kill]{default} {green}{1}{default} ({2}) punched {olive}{3}{default} flying. Lao Da, I miss you!!!!"
+		"zho"	"{olive}[牢大復蘇]{default}{green}{1}{default}({2}) 一拳打飛打秒了{olive}{3}{default}，牢大我想你了！！！！"
+		"chi"	"{olive}[牢大复苏]{default}{green}{1}{default}({2}) 一拳打飞打秒了{olive}{3}{default}，牢大我想你了！！！！"
+	}
+	"Karma_Smoke"
+	{
+		"#format"	"{1:s},{2:s},{3:N}"
+		"en"	"{olive}[Karma Kill]{default} {green}{1}{default} ({2}) dragged {olive}{3}{default} away with a tongue. Lao Da, I miss you!!!!"
+		"zho"	"{olive}[牢大復蘇]{default}{green}{1}{default}({2}) 舌頭拉扯打秒了{olive}{3}{default}，牢大我想你了！！！！"
+		"chi"	"{olive}[牢大复苏]{default}{green}{1}{default}({2}) 舌头拉扯打秒了{olive}{3}{default}，牢大我想你了！！！！"
+	}
+	"Karma_Stagger"
+	{
+		"#format"	"{1:s},{2:s},{3:N}"
+		"en"	"{olive}[Karma Kill]{default} {green}{1}{default} ({2}) staggered {olive}{3}{default} to death. Lao Da, I miss you!!!!"
+		"zho"	"{olive}[牢大復蘇]{default}{green}{1}{default}({2}) 震開打秒了{olive}{3}{default}，牢大我想你了！！！！"
+		"chi"	"{olive}[牢大复苏]{default}{green}{1}{default}({2}) 震开打秒了{olive}{3}{default}，牢大我想你了！！！！"
+	}
+	"Karma_Special"
+	{
+		"#format"	"{1:s},{2:s},{3:N}"
+		"en"	"{olive}[Karma Kill]{default} {green}{1}{default} ({2}) karmad {olive}{3}{default}. Lao Da, I miss you!!!!"
+		"zho"	"{olive}[牢大復蘇]{default}{green}{1}{default}({2}) 打秒了{olive}{3}{default}，牢大我想你了！！！！"
+		"chi"	"{olive}[牢大复苏]{default}{green}{1}{default}({2}) 打秒了{olive}{3}{default}，牢大我想你了！！！！"
+	}
+	"Karma_Survivor"
+	{
+		"#format"	"{1:s}"
+		"en"	"{olive}[Karma Kill]{default} {green}{1}{default} jumped off the map and died. Lao Da, I miss you!!!!"
+		"zho"	"{olive}[牢大復蘇]{default}{green}{1}{default}自己跳樓了，牢大我想你了！！！！"
+		"chi"	"{olive}[牢大复苏]{default}{green}{1}{default}自己跳楼了，牢大我想你了！！！！"
+	}
+}

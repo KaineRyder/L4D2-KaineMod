@@ -24,7 +24,7 @@
 	{
 		"type"	"S"
 		"text"	"{GREEN}{TEAM}闲的没事可以 !roll 来投骰子，用法：!roll+数字，或者!clip来投硬币"
-	
+	}
 	"6"
 	{
 		"type"	"S"

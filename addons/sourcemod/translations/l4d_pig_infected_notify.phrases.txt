@@ -74,24 +74,24 @@
 	{
 		"#format"	"{1:t}"
 		"en"	"{green}[SM] {green}Tank is {olive}{1}{default}."
-		"zho"	"{green}[提示] {green}Tank {olive}{1}{default}了."
-		"chi"	"{green}[提示] {green}坦克 {olive}{1}{default}了。"
+		"zho"	"{green}[铸币操作] {green}Tank {olive}{1}{default}了."
+		"chi"	"{green}[铸币操作] {green}坦克 {olive}{1}{default}了。"
 		"ru"	"{green}[SM] {green}Танк {olive}{1}{default}."
 	}
 	"Player is killed by something"
 	{
 		"#format"	"{1:N},{2:t}"
 		"en"	"{green}[SM] {red}{1}{default} is {olive}{2}{default}."
-		"zho"	"{green}[提示] {red}{1}{default} {olive}{2}{default}了."
-		"chi"	"{green}[提示] {red}{1}{default} {olive}{2}{default}了。"
+		"zho"	"{green}[铸币操作] {red}{1}{default} {olive}{2}{default}了."
+		"chi"	"{green}[铸币操作] {red}{1}{default} {olive}{2}{default}了。"
 		"ru"	"{green}[SM] {red}{1}{default} {olive}{2}{default}."
 	}
 	"Tank Kill Witch"
 	{
 		"#format"	"{1:t}"
 		"en"	"{green}[SM] {green}Tank {default}uses {olive}{1}{default} to terminate {red}Witch{default}."
-		"zho"	"{green}[提示] {green}Tank {default}使用 {olive}{1}{default} 星爆氣流斬 {red}Witch{default}."
-		"chi"	"{green}[提示] {green}坦克 {default}使用 {olive}{1}{default} 星爆氣流斬 {red}妹子{default}."
+		"zho"	"{green}[铸币操作] {green}Tank {default}使用 {olive}{1}{default} 星爆氣流斬 {red}Witch{default}."
+		"chi"	"{green}[铸币操作] {green}坦克 {default}使用 {olive}{1}{default} 星爆氣流斬 {red}妹子{default}."
 		"ru"	"{green}[SM] {green}Танк {default}использует \"{olive}{1}{default}\" для убийства {red}ведьмы{default}."
 	}
 	"punches"
@@ -126,130 +126,130 @@
 	{
 		"#format"	"{1:t},{2:s}"
 		"en"	"{green}[SM] {green}Tank {olive}{1}{default} {2}teammate."
-		"zho"	"{green}[提示] {green}Tank {olive}{1}死{default} {2}隊友."
-		"chi"	"{green}[提示] {green}坦克 {olive}{1}死{default} {2}队友。"
+		"zho"	"{green}[铸币操作] {green}Tank {olive}{1}死{default} {2}隊友."
+		"chi"	"{green}[铸币操作] {green}坦克 {olive}{1}死{default} {2}队友。"
 		"ru"	"{green}[SM] {green}Танк {olive}{1}{default} {2}союзника."
 	}
 	"Tank kill Tank"
 	{
 		"#format"	"{1:t}"
 		"en"	"{green}[SM] {green}Tank {olive}{1}{default} {2}another Tank."
-		"zho"	"{green}[提示] {green}Tank {olive}{1}死{default} 另一隻Tank."
-		"chi"	"{green}[提示] {green}坦克 {olive}{1}死{default} 另一只Tank。"
+		"zho"	"{green}[铸币操作] {green}Tank {olive}{1}死{default} 另一隻Tank."
+		"chi"	"{green}[铸币操作] {green}坦克 {olive}{1}死{default} 另一只Tank。"
 		"ru"	"{green}[SM] {green}Танк {olive}{1}{default} {2}другого танка."
 	}
 	"l4d_pig_infected1"
 	{
 		"en"	"{green}[SM] {green}Tank{default} get stumble by the door."
-		"zho"	"{green}[提示] {green}Tank{default} 被門暈眩."
-		"chi"	"{green}[提示] {green}Tank{default} 被门晕眩."
+		"zho"	"{green}[铸币操作] {green}Tank{default} 被門暈眩."
+		"chi"	"{green}[铸币操作] {green}Tank{default} 被门晕眩."
 		"ru"	"{green}[SM] {green}Танк{default} оглушён у двери."
 	}
 	"l4d_pig_infected2"
 	{
 		"en"	"{green}[SM] {red}Witch{default} killed teammate."
-		"zho"	"{green}[提示] {red}妹子{default} 使出 {olive}天馬流星拳 {default}打死隊友."
-		"chi"	"{green}[提示] {red}妹子{default} 使出 {olive}天马流星拳 {default}打死队友。"
+		"zho"	"{green}[铸币操作] {red}妹子{default} 使出 {olive}天馬流星拳 {default}打死隊友."
+		"chi"	"{green}[铸币操作] {red}妹子{default} 使出 {olive}天马流星拳 {default}打死队友。"
 		"ru"	"{green}[SM] {red}Ведьма{default} убивает союзника."
 	}
 	"l4d_pig_infected3"
 	{
 		"en"	"{green}[SM] {red}Witch{default} killed AI teammate."
-		"zho"	"{green}[提示] {red}妹子{default} 使出 {olive}北斗神拳 {default}打死AI隊友."
-		"chi"	"{green}[提示] {red}妹子{default} 使出 {olive}北斗神拳 {default}打死AI队友。"
+		"zho"	"{green}[铸币操作] {red}妹子{default} 使出 {olive}北斗神拳 {default}打死AI隊友."
+		"chi"	"{green}[铸币操作] {red}妹子{default} 使出 {olive}北斗神拳 {default}打死AI队友。"
 		"ru"	"{green}[SM] {red}Ведьма{default} убивает союзника-ИИ."
 	}
 	"l4d_pig_infected4"
 	{
 		"en"	"{green}[SM] {red}Witch{default} {olive}gone{default}."
-		"zho"	"{green}[提示] {red}妹子{default} {olive}歸天{default}了."
-		"chi"	"{green}[提示] {red}妹子{default} {olive}狗带{default}了。"
+		"zho"	"{green}[铸币操作] {red}妹子{default} {olive}歸天{default}了."
+		"chi"	"{green}[铸币操作] {red}妹子{default} {olive}狗带{default}了。"
 		"ru"	"{green}[SM] {red}Ведьма{default} {olive}померла{default}."
 	}
 	"l4d_pig_infected5"
 	{
 		"#format"	"{1:N},{2:N}"
 		"en"	"{green}[SM] {olive}{1}{default} kills {red}{2}{default}'s Boomer to stumble {green}Tank{default}."
-		"zho"	"{green}[提示] {olive}{1}{default} 殺死 {red}{2}{default}'s Boomer 炸暈 {green}Tank{default}."
-		"chi"	"{green}[提示] {olive}{1}{default} 杀死 {red}{2}{default}'s Boomer 炸晕 {green}坦克{default}。"
+		"zho"	"{green}[铸币操作] {olive}{1}{default} 殺死 {red}{2}{default}'s Boomer 炸暈 {green}Tank{default}."
+		"chi"	"{green}[铸币操作] {olive}{1}{default} 杀死 {red}{2}{default}'s Boomer 炸晕 {green}坦克{default}。"
 		"ru"	"{green}[SM] {olive}{1}{default} убивает толстяка {red}{2}{default}, чтобы оглушить {green}танка{default}."
 	}
 	"l4d_pig_infected6"
 	{
 		"#format"	"{1:N}"
 		"en"	"{green}[SM] {olive}{1}{default} kills {red}AI{default} Boomer to stumble {green}Tank{default}."
-		"zho"	"{green}[提示] {olive}{1}{default} 殺死 {red}AI{default} Boomer 炸暈 {green}Tank{default}."
-		"chi"	"{green}[提示] {olive}{1}{default} 杀死 {red}AI{default} Boomer 炸晕 {green}坦克{default}。"
+		"zho"	"{green}[铸币操作] {olive}{1}{default} 殺死 {red}AI{default} Boomer 炸暈 {green}Tank{default}."
+		"chi"	"{green}[铸币操作] {olive}{1}{default} 杀死 {red}AI{default} Boomer 炸晕 {green}坦克{default}。"
 		"ru"	"{green}[SM] {olive}{1}{default} убивает толстяка-{red}ИИ{default}, чтобы оглушить {green}танка{default}."
 	}
 	"l4d_pig_infected7"
 	{
 		"#format"	"{1:t},{2:N}"
 		"en"	"{green}[SM] {green}Tank {olive}{1} {red}{2}{default}'s Boomer to stumble himself."
-		"zho"	"{green}[提示] {green}Tank {olive}死{1} {red}{2}{default}'s Boomer 炸暈自己."
-		"chi"	"{green}[提示] {green}坦克 {olive}死{1} {red}{2}{default}'s Boomer 炸晕自己。"
+		"zho"	"{green}[铸币操作] {green}Tank {olive}死{1} {red}{2}{default}'s Boomer 炸暈自己."
+		"chi"	"{green}[铸币操作] {green}坦克 {olive}死{1} {red}{2}{default}'s Boomer 炸晕自己。"
 		"ru"	"{green}[SM] {green}Танк {olive}{1} толстяка {red}{2}{default}, чтобы оглушить себя."
 	}
 	"l4d_pig_infected8"
 	{
 		"#format"	"{1:t}"
 		"en"	"{green}[SM] {green}Tank {olive}{1} {red}AI{default} Boomer to stumble himself."
-		"zho"	"{green}[提示] {green}Tank {olive}{1}死 {red}AI{default} Boomer 炸暈自己."
-		"chi"	"{green}[提示] {green}坦克 {olive}{1}死 {red}AI{default} Boomer 炸晕自己。"
+		"zho"	"{green}[铸币操作] {green}Tank {olive}{1}死 {red}AI{default} Boomer 炸暈自己."
+		"chi"	"{green}[铸币操作] {green}坦克 {olive}{1}死 {red}AI{default} Boomer 炸晕自己。"
 		"ru"	"{green}[SM] {green}Танк {olive}{1} толстяка-{red}ИИ{default}, чтобы оглушить себя."
 	}
 	"l4d_pig_infected9"
 	{
 		"#format"	"{1:t},{2:N}"
 		"en"	"{green}[SM] {green}Tank {olive}{1} {red}{2}{default}'s Boomer."
-		"zho"	"{green}[提示] {green}Tank {olive}{1}死 {red}{2}{default}'s Boomer"
-		"chi"	"{green}[提示] {green}坦克 {olive}{1}死 {red}{2}{default}'s Boomer。"
+		"zho"	"{green}[铸币操作] {green}Tank {olive}{1}死 {red}{2}{default}'s Boomer"
+		"chi"	"{green}[铸币操作] {green}坦克 {olive}{1}死 {red}{2}{default}'s Boomer。"
 		"ru"	"{green}[SM] {green}Танк {olive}{1} толстяка {red}{2}{default}."
 	}
 	"l4d_pig_infected10"
 	{
 		"#format"	"{1:t}"
 		"en"	"{green}[SM] {green}Tank {olive}{1} {red}AI{default} Boomer."
-		"zho"	"{green}[提示] {green}Tank {olive}{1}死 {red}AI{default} Boomer"
-		"chi"	"{green}[提示] {green}坦克 {olive}{1}死 {red}AI{default} Boomer。"
+		"zho"	"{green}[铸币操作] {green}Tank {olive}{1}死 {red}AI{default} Boomer"
+		"chi"	"{green}[铸币操作] {green}坦克 {olive}{1}死 {red}AI{default} Boomer。"
 		"ru"	"{green}[SM] {green}Танк {olive}{1} толстяка-{red}ИИ{default}."
 	}
 	"l4d_pig_infected11"
 	{
 		"#format"	"{1:N}"
 		"en"	"{green}[SM] {red}{1}{default}'s Boomer exploded."
-		"zho"	"{green}[提示] {red}{1}{default}'s Boomer 爆炸啦."
-		"chi"	"{green}[提示] {red}{1}{default}'s Boomer 爆炸啦。"
+		"zho"	"{green}[铸币操作] {red}{1}{default}'s Boomer 爆炸啦."
+		"chi"	"{green}[铸币操作] {red}{1}{default}'s Boomer 爆炸啦。"
 		"ru"	"{green}[SM] {default}Толстяк {red}{1}{default} взорвался."
 	}
 	"l4d_pig_infected12"
 	{
 		"en"	"{green}[SM] {red}AI{default} Boomer exploded."
-		"zho"	"{green}[提示] {red}AI{default} Boomer 爆炸啦."
-		"chi"	"{green}[提示] {red}AI{default} Boomer 爆炸啦。"
+		"zho"	"{green}[铸币操作] {red}AI{default} Boomer 爆炸啦."
+		"chi"	"{green}[铸币操作] {red}AI{default} Boomer 爆炸啦。"
 		"ru"	"{green}[SM] {default}Толстяк-{red}ИИ{default} взорвался."
 	}
 	"l4d_pig_infected13"
 	{
 		"#format"	"{1:N}"
 		"en"	"{green}[SM] {red}{1}{default}'s Boomer stumbles {green}Tank{default}."
-		"zho"	"{green}[提示] {default}神隊友 {red}{1}{default}'s Boomer 炸暈 {green}Tank{default}."
-		"chi"	"{green}[提示] {default}神队友 {red}{1}{default}'s Boomer 炸晕 {green}坦克{default}。"
+		"zho"	"{green}[铸币操作] {default}神隊友 {red}{1}{default}'s Boomer 炸暈 {green}Tank{default}."
+		"chi"	"{green}[铸币操作] {default}神队友 {red}{1}{default}'s Boomer 炸晕 {green}坦克{default}。"
 		"ru"	"{green}[SM] {default}Толстяк {red}{1}{default} оглушает {green}танка{default}."
 	}
 	"l4d_pig_infected14"
 	{
 		"en"	"{green}[SM] {red}AI{default} Boomer stumbles {green}Tank{default}."
-		"zho"	"{green}[提示] {red}AI{default}'s Boomer 炸暈 {green}Tank{default}."
-		"chi"	"{green}[提示] {red}AI{default}'s Boomer 炸晕 {green}坦克{default}。"
+		"zho"	"{green}[铸币操作] {red}AI{default}'s Boomer 炸暈 {green}Tank{default}."
+		"chi"	"{green}[铸币操作] {red}AI{default}'s Boomer 炸晕 {green}坦克{default}。"
 		"ru"	"{green}[SM] {default}Толстяк-{red}ИИ{default} оглушает {green}танка{default}."
 	}
 	"Witch Killed Special"
 	{
 		"#format"	"{1:s}"
 		"en"	"{green}[SM] {red}Witch{default} killed {red}{1}{default}."
-		"zho"	"{green}[提示] {red}Witch{default}殺死了{red}{1}{default}。"
-		"chi"	"{green}[提示] {red}Witch{default}杀死了{red}{1}{default}。"
+		"zho"	"{green}[铸币操作] {red}Witch{default}殺死了{red}{1}{default}。"
+		"chi"	"{green}[铸币操作] {red}Witch{default}杀死了{red}{1}{default}。"
 		"ru"	"{green}[SM] {red}Ведьма{default} убила {red}{1}{default}."
 	}
 
@@ -257,37 +257,37 @@
 	"Boomer Alarm"
 	    {
 	        "#format" "{1:N},{2:s}"
-	        "chi" "{olive}{1}{default}打爆{red}{2}{default}的Boomer，触发警报车。"
+	        "chi" "{green}[铸币操作] {olive}{1}{default}打爆{red}{2}{default}的Boomer，触发警报车。"
 	        "en" "{olive}{1}{default} exploded {red}{2}{default}'s Boomer and triggered a car alarm."
 	    }
 	    "Boomer Clear"
 	    {
 	        "#format" "{1:s},{2:s}"
-	        "chi" "{red}{1}{default}的Boomer炸控了{red}{2}{default}。"
+	        "chi" "{green}[铸币操作] {red}{1}{default}的Boomer炸控了{red}{2}{default}。"
 	        "en" "{red}{1}{default}'s Boomer explosion cleared {red}{2}{default}'s control."
 	    }
 	    "Witch Kill"
 	    {
 	        "#format" "{1:s}"
-	        "chi" "{red}{1}{default}杀死了Witch。"
+	        "chi" "{green}[铸币操作] {red}{1}{default}杀死了Witch。"
 	        "en" "{red}{1}{default} killed the Witch."
 	    }
 	    "Witch Kill Assist"
 	    {
 	        "#format" "{1:s},{2:s}"
-	        "chi" "{red}{1}{default}杀死了Witch，助攻：{red}{2}{default}。"
+	        "chi" "{green}[铸币操作] {red}{1}{default}杀死了Witch，助攻：{red}{2}{default}。"
 	        "en" "{red}{1}{default} killed the Witch. Assists: {red}{2}{default}."
 	    }
 	    "Bile Teammate"
 	    {
 	        "#format" "{1:N},{2:N}"
-	        "chi" "{olive}{1}{default}打爆Boomer，导致{olive}{2}{default}被胆汁喷射。"
+	        "chi" "{green}[铸币操作] {olive}{1}{default}打爆Boomer，导致{olive}{2}{default}被胆汁喷射。"
 	        "en" "{olive}{1}{default} exploded a Boomer and splashed {olive}{2}{default} with bile."
 	    }
 	    "Control Steal"
 	    {
 	        "#format" "{1:s},{2:s},{3:N}"
-	        "chi" "{red}{1}{default}抢控了{red}{2}{default}控制的生还者{olive}{3}{default}。"
+	        "chi" "{green}[铸币操作] {red}{1}{default}抢控了{red}{2}{default}控制的生还者{olive}{3}{default}。"
 	        "en" "{red}{1}{default} stole control of {olive}{3}{default} from {red}{2}{default}."
 	    }
 }

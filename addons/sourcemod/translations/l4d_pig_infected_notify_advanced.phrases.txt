@@ -3,37 +3,37 @@
     "Boomer Alarm"
     {
         "#format" "{1:N},{2:s}"
-        "chi" "{olive}{1}{default}打爆{red}{2}{default}的Boomer，触发警报车。"
+        "chi" "{green}[铸币操作] {olive}{1}{default}打爆{red}{2}{default}的Boomer，触发警报车。"
         "en" "{olive}{1}{default} exploded {red}{2}{default}'s Boomer and triggered a car alarm."
     }
     "Boomer Clear"
     {
         "#format" "{1:s},{2:s}"
-        "chi" "{red}{1}{default}的Boomer炸控了{red}{2}{default}。"
+        "chi" "{green}[铸币操作] {red}{1}{default}的Boomer炸控了{red}{2}{default}。"
         "en" "{red}{1}{default}'s Boomer explosion cleared {red}{2}{default}'s control."
     }
     "Witch Kill"
     {
         "#format" "{1:s}"
-        "chi" "{red}{1}{default}杀死了Witch。"
+        "chi" "{green}[铸币操作] {red}{1}{default}杀死了Witch。"
         "en" "{red}{1}{default} killed the Witch."
     }
     "Witch Kill Assist"
     {
         "#format" "{1:s},{2:s}"
-        "chi" "{red}{1}{default}杀死了Witch，助攻：{red}{2}{default}。"
+        "chi" "{green}[铸币操作] {red}{1}{default}杀死了Witch，助攻：{red}{2}{default}。"
         "en" "{red}{1}{default} killed the Witch. Assists: {red}{2}{default}."
     }
     "Bile Teammate"
     {
         "#format" "{1:N},{2:N}"
-        "chi" "{olive}{1}{default}打爆Boomer，导致{olive}{2}{default}被胆汁喷射。"
+        "chi" "{green}[铸币操作] {olive}{1}{default}打爆Boomer，导致{olive}{2}{default}被胆汁喷射。"
         "en" "{olive}{1}{default} exploded a Boomer and splashed {olive}{2}{default} with bile."
     }
     "Control Steal"
     {
         "#format" "{1:s},{2:s},{3:N}"
-        "chi" "{red}{1}{default}抢控了{red}{2}{default}控制的生还者{olive}{3}{default}。"
+        "chi" "{green}[铸币操作] {red}{1}{default}抢控了{red}{2}{default}控制的生还者{olive}{3}{default}。"
         "en" "{red}{1}{default} stole control of {olive}{3}{default} from {red}{2}{default}."
     }
 }

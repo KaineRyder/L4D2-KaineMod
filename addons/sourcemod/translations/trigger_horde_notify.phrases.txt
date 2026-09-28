@@ -1,5 +1,13 @@
 ﻿"Phrases"
 {
+	"Tag"
+	{
+		"en"	"{olive}[Horde Trigger]{default}"
+		"zho"	"{olive}[屍潮觸發]{default}"
+		"chi"	"{olive}[尸潮触发]{default}"
+		"ru"	"{olive}[Событие орды]{default}"
+		"hu"	"{olive}[Hordaesemény]{default}"
+	}
 	"Alarmed_Car"
 	{
 		"en"		"{olive}%N{green} triggered an alarmed car!"
