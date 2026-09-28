@@ -74,7 +74,7 @@ ConVar
 // Plugin Cvars
 ConVar 
 	// basic
-	l4d_ready_enabled, l4d_ready_cfg_name, l4d_ready_server_cvar, l4d_ready_max_players, l4d_ready_autoready,
+	l4d_ready_enabled, l4d_ready_cfg_name, l4d_ready_server_cvar, l4d_ready_max_players, l4d_ready_autoready, l4d_ready_team_representative,
 	// game
 	l4d_ready_disable_spawns, l4d_ready_survivor_freeze,
 	// sound

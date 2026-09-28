@@ -1,0 +1,6 @@
+whitelist
+{
+	// Allow only the server music directories to be loaded from disk.
+	sound\musicbox\... any
+	sound\custom\... any
+}

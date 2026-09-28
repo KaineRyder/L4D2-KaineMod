@@ -55,17 +55,34 @@ Action Unready_Cmd(int client, int args)
 		}
 		else
 		{
+			bool teamRepresentativeUnready = false;
 			if (IsPlayer(client))
 			{
 				SetButtonTime(client);
-				if (SetPlayerReady(client, false))
+				if (IsTeamRepresentativeMode())
+				{
+					teamRepresentativeUnready = true;
+					int team = GetClientTeam(client);
+					bool teamWasReady = IsTeamReady(team);
+					for (int i = 1; i <= MaxClients; i++)
+					{
+						if (IsClientInGame(i) && GetClientTeam(i) == team)
+							SetPlayerReady(i, false);
+					}
+					if (teamWasReady)
+						PlayNotifySound(client);
+				}
+				else if (SetPlayerReady(client, false))
+				{
 					PlayNotifySound(client);
+				}
 			}
 			else if (!hasflag)
 			{
 				return Plugin_Handled;
 			}
-			CancelFullReady(client, readyStatus);
+			if (!teamRepresentativeUnready || !CheckFullReady())
+				CancelFullReady(client, readyStatus);
 		}
 	}
 	return Plugin_Handled;
@@ -75,9 +92,16 @@ Action ToggleReady_Cmd(int client, int args)
 {
 	if (inReadyUp)
 	{
+		if (IsTeamRepresentativeMode() && IsPlayer(client))
+			return IsTeamReady(GetClientTeam(client)) ? Unready_Cmd(client, 0) : Ready_Cmd(client, 0);
 		return IsPlayerReady(client) ? Unready_Cmd(client, 0) : Ready_Cmd(client, 0);
 	}
 	return Plugin_Handled;
+}
+
+bool IsTeamRepresentativeMode()
+{
+	return l4d_ready_team_representative.BoolValue && readyUpMode == ReadyMode_TeamReady;
 }
 
 // ========================

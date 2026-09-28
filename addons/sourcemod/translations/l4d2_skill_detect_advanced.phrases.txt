@@ -10,8 +10,8 @@
 	"Advanced_RoundEnd"
 	{
 		"en"	"{green}★ The round is over.{default}"
-		"zho"	"本回合落幕！\n正在播放四控专属音乐：Inhuman"
-		"chi"	"本回合落幕！\n正在播放四控专属音乐：Inhuman"
+		"zho"	"{yellow}★ 本回合落幕！{default}"
+		"chi"	"{yellow}★ 本回合落幕！{default}"
 	}
 	"Advanced_ChargerMulti"
 	{
@@ -58,8 +58,8 @@
 	"Advanced_ChargerGunTeam"
 	{
 		"#format"	"{1:N},{2:N},{3:d},{4:d},{5:s},{6:s}"
-		"en"	"{green}★ {olive}{1}{default} teamskeeted charging {olive}{2}{default} for {green}{3} damage{default} in {green}{4}{default} shot{5}. Assisted by: {olive}{6}{default}"
-		"zho"	"{green}★ {olive}{1}{default} 集火擊殺了正在衝鋒的 {olive}{2}{default}，造成 {green}{3}{default} 傷害，共開 {green}{4}{default} 槍。協助：{olive}{6}{default}"
-		"chi"	"{green}★ {olive}{1}{default} 集火击杀了正在冲锋的 {olive}{2}{default}，造成 {green}{3}{default} 伤害，共开 {green}{4}{default} 枪。协助：{olive}{6}{default}"
+		"en"	"{green}★ {olive}{1}{default} teamskeeted charging {olive}{2}{default} for {green}{3} damage{default} in {green}{4}{default} shot{5}. Assisted by: {olive}{6}"
+		"zho"	"{green}★ {olive}{1}{default} 集火擊殺了正在衝鋒的 {olive}{2}{default}，造成 {green}{3}{default} 傷害，共開 {green}{4}{default} 槍。協助：{olive}{6}"
+		"chi"	"{green}★ {olive}{1}{default} 集火击杀了正在冲锋的 {olive}{2}{default}，造成 {green}{3}{default} 伤害，共开 {green}{4}{default} 枪。协助：{olive}{6}"
 	}
 }

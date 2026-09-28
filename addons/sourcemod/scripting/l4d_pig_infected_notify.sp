@@ -6,7 +6,8 @@
 #include <sdkhooks>
 #include <multicolors>
 #include <left4dhooks>
-#define PLUGIN_VERSION 	"2.8"
+#include "l4d_pig_infected_notify/advanced.sp"
+#define PLUGIN_VERSION 	"2.9"
 #define PLUGIN_NAME		"l4d_pig_infected_notify"
 #define DEBUG 0
 
@@ -91,6 +92,7 @@ bool g_bCvarEnable;
 public void OnPluginStart()
 {
 	LoadTranslations(TRANSLATION_FILE);
+	if (ZC_TANK == 8) PigAdvanced_OnPluginStart();
 
 	g_hCvarEnable 		= CreateConVar( PLUGIN_NAME ... "_enable",        "1",   "0=Plugin off, 1=Plugin on.", CVAR_FLAGS, true, 0.0, true, 1.0);
 	CreateConVar(                       PLUGIN_NAME ... "_version",       PLUGIN_VERSION, PLUGIN_NAME ... " Plugin Version", CVAR_FLAGS_PLUGIN_VERSION);
@@ -101,6 +103,16 @@ public void OnPluginStart()
 
 	HookEvent("player_spawn",           Event_PlayerSpawn);
 	HookEvent("player_death", 			Event_PlayerDeath);
+}
+
+public void OnEntityCreated(int entity, const char[] classname)
+{
+	if (ZC_TANK == 8) PigAdvanced_OnEntityCreated(entity, classname);
+}
+
+public void OnClientDisconnect(int client)
+{
+	if (ZC_TANK == 8) PigAdvanced_OnClientDisconnect(client);
 }
 
 // Cvars-------------------------------
@@ -131,14 +143,14 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast)
 	g_cBoomerDeath[victim].Clear();
 	if( IsWitch(event.GetInt("attackerentid")) && victim != 0 && IsClientInGame(victim) && GetClientTeam(victim) == 3 )
 	{
-		if(!IsFakeClient(victim))//真人特感 player
-		{
-			CPrintToChatAll("%t", "l4d_pig_infected2");
-		}
+		char className[16];
+		char victimName[MAX_NAME_LENGTH + 24];
+		GetSpecialClassName(GetEntProp(victim, Prop_Send, "m_zombieClass"), className, sizeof(className));
+		if (IsFakeClient(victim))
+			FormatEx(victimName, sizeof(victimName), "AI(%s)", className);
 		else
-		{
-			CPrintToChatAll("%t", "l4d_pig_infected3");
-		}
+			FormatEx(victimName, sizeof(victimName), "%N(%s)", victim, className);
+		CPrintToChatAll("%t", "Witch Killed Special", victimName);
 		return;
 	}
 	
@@ -283,6 +295,7 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast)
 
 public void L4D2_OnStagger_Post(int tank, int source)
 {
+	if (ZC_TANK == 8) PigAdvanced_OnStagger(tank, source);
 	if(!g_bCvarEnable) return;
 	if(!PlayerIsTank(tank)) return;
 	if(g_fTankStaggerEngineTime[tank] > GetEngineTime()) return;
@@ -390,6 +403,26 @@ bool PlayerIsTank(int client)
 		return true;
 
 	return false;
+}
+
+void GetSpecialClassName(int zombieClass, char[] buffer, int maxlen)
+{
+	if (zombieClass == ZC_TANK)
+	{
+		strcopy(buffer, maxlen, "Tank");
+		return;
+	}
+
+	switch (zombieClass)
+	{
+		case ZC_SMOKER: strcopy(buffer, maxlen, "Smoker");
+		case ZC_BOOMER: strcopy(buffer, maxlen, "Boomer");
+		case ZC_HUNTER: strcopy(buffer, maxlen, "Hunter");
+		case ZC_SPITTER: strcopy(buffer, maxlen, "Spitter");
+		case ZC_JOCKEY: strcopy(buffer, maxlen, "Jockey");
+		case ZC_CHARGER: strcopy(buffer, maxlen, "Charger");
+		default: strcopy(buffer, maxlen, "SI");
+	}
 }
 
 bool IsWitch(int entity)

@@ -6,7 +6,7 @@
 #include <sdkhooks>
 #include <multicolors>
 
-#define PLUGIN_VERSION "1.3.1-20260921-inhuman"
+#define PLUGIN_VERSION "1.3.5-20260923-no-round-end-music"
 
 #define MAX_EDICTS 2048
 
@@ -29,11 +29,6 @@
 
 #define MULTI_CONTROL_MIN 2
 #define MULTI_CONTROL_MAX 4
-#define ROUND_END_SOUND "inhuman.mp3"
-#define ROUND_END_DOWNLOAD "sound/inhuman.mp3"
-#define ROUND_END_EMIT_SOUND "inhuman.mp3"
-#define ROUND_END_SOUND_DURATION 5.0
-#define ROUND_END_SOUND_CHANNEL SNDCHAN_AUTO
 
 public Plugin myinfo =
 {
@@ -58,7 +53,6 @@ ConVar g_hCvarBoomerWindow;
 ConVar g_hCvarTankPunchWindow;
 
 Handle g_hControlTimer;
-Handle g_hRoundEndSoundTimer;
 Handle g_hChargerReset[MAXPLAYERS + 1];
 Handle g_hBoomerReset[MAXPLAYERS + 1];
 Handle g_hTankPunchReset[MAXPLAYERS + 1];
@@ -221,7 +215,6 @@ public void OnPluginStart()
 
 public void OnPluginEnd()
 {
-    StopRoundEndSound();
     delete g_hControlTimer;
 	g_hControlTimer = null;
 
@@ -241,8 +234,6 @@ public void OnPluginEnd()
 
 public void OnMapStart()
 {
-    PrepareRoundEndSound();
-
 	for (int entity = 0; entity < MAX_EDICTS; entity++)
 	{
 		g_bHittableHooked[entity] = false;
@@ -255,25 +246,9 @@ public void OnMapStart()
 	CreateTimer(0.20, Timer_HookExistingHittables, _, TIMER_FLAG_NO_MAPCHANGE);
 }
 
-public void OnConfigsExecuted()
-{
-    // Also prepare the stream when the plugin is loaded or reloaded during
-    // an already-running map.
-    PrepareRoundEndSound();
-}
-
-void PrepareRoundEndSound()
-{
-    // inhuman.mp3 is a server-side custom file.  Make it available to
-    // connecting clients and use the same client-side play path as karma.mp3.
-    AddFileToDownloadsTable(ROUND_END_DOWNLOAD);
-    PrecacheGeneric(ROUND_END_DOWNLOAD, true);
-}
-
 public void OnMapEnd()
 {
     g_bRoundEnded = true;
-    StopRoundEndSound();
     delete g_hControlTimer;
 	g_hControlTimer = null;
 	ResetAllState();
@@ -320,8 +295,7 @@ public void OnEntityDestroyed(int entity)
 public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 {
     g_bRoundEnded = false;
-    StopRoundEndSound();
-    ResetAllState();
+	ResetAllState();
 	ResetHittableOwnerCache();
 	CreateTimer(0.20, Timer_HookExistingHittables, _, TIMER_FLAG_NO_MAPCHANGE);
 }
@@ -329,8 +303,7 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
     g_bRoundEnded = true;
-    StopRoundEndSound();
-    ResetAllState();
+	ResetAllState();
 	ResetHittableOwnerCache();
 }
 
@@ -902,59 +875,14 @@ public Action Timer_CheckMultiControl(Handle timer)
 
 void AnnounceControlRoundEnd()
 {
-	CPrintToChatAll("%t", "Advanced_RoundEnd");
-	PlayRoundEndSound();
+	// A loaded but disabled music box will not announce a multi-control wipe.
+	ConVar musicBoxEnabled = FindConVar("l4d2_musicbox_enable");
+	if (!LibraryExists("l4d2_musicbox") || musicBoxEnabled == null ||
+		!musicBoxEnabled.BoolValue)
+	{
+		CPrintToChatAll("%t", "Advanced_RoundEnd");
+	}
 	g_bControlRoundEndAnnounced = true;
-}
-
-void PlayRoundEndSound()
-{
-    StopRoundEndSound();
-
-    int sent = 0;
-    for (int client = 1; client <= MaxClients; client++)
-    {
-        if (IsClientInGame(client) && !IsFakeClient(client))
-        {
-            // The unstarred client command is the working path for custom
-            // MP3s on this server.  ROUND_END_SOUND is relative to sound/.
-            ClientCommand(client, "play %s", ROUND_END_SOUND);
-            sent++;
-        }
-    }
-
-    LogMessage("[AdvancedAudio] Four-control round-end music SENT: sample=\"%s\" clients=%d duration=%.2f", ROUND_END_SOUND, sent, ROUND_END_SOUND_DURATION);
-
-    g_hRoundEndSoundTimer = CreateTimer(
-        ROUND_END_SOUND_DURATION,
-        Timer_StopRoundEndSound,
-        _,
-        TIMER_FLAG_NO_MAPCHANGE);
-}
-
-void StopRoundEndSound()
-{
-    delete g_hRoundEndSoundTimer;
-    g_hRoundEndSoundTimer = null;
-    StopRoundEndSoundForClients();
-}
-
-void StopRoundEndSoundForClients()
-{
-    for (int client = 1; client <= MaxClients; client++)
-    {
-        if (IsClientInGame(client))
-        {
-            StopSound(client, ROUND_END_SOUND_CHANNEL, ROUND_END_EMIT_SOUND);
-        }
-    }
-}
-
-public Action Timer_StopRoundEndSound(Handle timer)
-{
-    g_hRoundEndSoundTimer = null;
-    StopRoundEndSoundForClients();
-    return Plugin_Stop;
 }
 
 void StartControlTimer()
