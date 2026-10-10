@@ -1,21 +1,23 @@
-# L4D2 legacy MOTD files
+﻿# L4D2 MOTD and host banner
 
-This folder contains minimal HTTP-hosted MOTD and server banner pages for the old Left 4 Dead 2 HTML renderer. The HTML uses only basic markup and same-folder PNG images.
+## Files
 
-## Deploy
+- `mymotd.txt` contains the MOTD HTML inline; it does not fetch a separate page or image.
+- `motd-commands.html` is a separately hosted draft of the same text page, not used by the current `mymotd.txt`.
+- `myhost.txt` points to `host5.html`.
+- `host5.html` displays `host-new.png` at 471×180 pixels, preserving its 654×250 aspect ratio.
 
-Copy `motd.html`, `motd.png`, `host.html`, and `host.png` into the HTTP document root at `fastdl/motd-legacy/` on the FastDL host configured in `cfg/fastdl.cfg`. The files must be publicly readable over plain HTTP. Check that these URLs return the pages directly with status `200` and do not redirect to HTTPS:
+## Server deployment paths
 
-`http://124.221.228.21/fastdl/motd-legacy/motd.html`
+The game files belong in `left4dead2/`:
 
-`http://124.221.228.21/fastdl/motd-legacy/host.html`
+- `mymotd.txt`
+- `myhost.txt`
 
-Then copy this folder's `mymotd.txt` and `myhost.txt` into the server's `left4dead2/` directory and restart the game server. `cfg/server.cfg` already selects both files. Put the supplied logo image in this folder as `host.png` before uploading.
+The FastDL banner files belong in `/var/www/l4d2-fastdl/motd-legacy/`:
 
-If the game keeps showing an old cached page after you update it, rename `motd.html` (for example, `motd2.html`) and change the URL in `mymotd.txt` to match.
+- `host5.html`
+- `host-new.png`
+- `motd2.png` (older image MOTD)
 
-## Compatibility notes
-
-- Keep the page and image on the same HTTP host and in the same directory.
-- Do not use HTTPS redirects, JavaScript, external CSS, web fonts, or modern layout features.
-- `motd.png` is re-encoded as a 24-bit RGB PNG and scaled to 960×480 for the legacy renderer.
+`cfg/server.cfg` selects `mymotd.txt` and `myhost.txt`.

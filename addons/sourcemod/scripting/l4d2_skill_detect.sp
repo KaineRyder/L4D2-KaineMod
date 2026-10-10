@@ -294,6 +294,9 @@ float 					g_fChargeVictimPos		[MAXPLAYERS + 1][3];							// location of each su
 int 					g_iVictimCharger		[MAXPLAYERS + 1];								// for a victim, by whom they got charge(impacted)
 int 					g_iVictimFlags			[MAXPLAYERS + 1];								// flags stored per charge victim: VICFLAGS_ 
 int 					g_iVictimMapDmg			[MAXPLAYERS + 1];								// for a victim, how much the cumulative map damage is so far (trigger hurt / drowning)
+int 					g_iLedgeCauseUserId	[MAXPLAYERS + 1];
+float 					g_fLedgeCauseTime	[MAXPLAYERS + 1];
+bool 					g_bLedgeWasHanging	[MAXPLAYERS + 1];
 
 // pops
 bool 					g_bBoomerHitSomebody	[MAXPLAYERS + 1];								// false if boomer didn't puke/exploded on anybody
@@ -527,6 +530,8 @@ public void OnPluginStart()
 	HookEvent("finale_win", 				Event_RoundEnd,		EventHookMode_PostNoCopy);
 	
 	HookEvent("player_spawn",				Event_PlayerSpawn,				EventHookMode_Post);
+	HookEvent("player_ledge_grab",			Event_PlayerLedgeGrab,			EventHookMode_Post);
+	CreateTimer(0.1, Timer_CheckLedgeHangState, _, TIMER_REPEAT);
 	HookEvent("player_hurt",				Event_PlayerHurt,				EventHookMode_Pre);
 	HookEvent("player_death",				Event_PlayerDeath_Pre,				EventHookMode_Pre);
 	HookEvent("ability_use",				Event_AbilityUse,				EventHookMode_Post);
@@ -640,6 +645,85 @@ public void OnPluginStart()
 	}
 }
 
+void Event_PlayerLedgeGrab(Event event, const char[] name, bool dontBroadcast)
+{
+	int victim = GetClientOfUserId(event.GetInt("userid"));
+	if (!IS_VALID_SURVIVOR(victim))
+		return;
+
+	// The event is not emitted consistently for ledges reached through infected control.
+	// Mark it handled here; Timer_CheckLedgeHangState catches state transitions the event misses.
+	g_bLedgeWasHanging[victim] = true;
+	AnnounceLedgeHang(victim, GetClientOfUserId(event.GetInt("causer")));
+}
+
+Action Timer_CheckLedgeHangState(Handle timer)
+{
+	for (int victim = 1; victim <= MaxClients; victim++)
+	{
+		if (!IS_VALID_SURVIVOR(victim) || !IsPlayerAlive(victim))
+		{
+			g_bLedgeWasHanging[victim] = false;
+			continue;
+		}
+
+		bool isHanging = GetEntProp(victim, Prop_Send, "m_isHangingFromLedge") != 0;
+		if (isHanging && !g_bLedgeWasHanging[victim])
+			AnnounceLedgeHang(victim);
+
+		g_bLedgeWasHanging[victim] = isHanging;
+	}
+
+	return Plugin_Continue;
+}
+
+void AnnounceLedgeHang(int victim, int eventCauser = 0)
+{
+	if (!IS_VALID_SURVIVOR(victim))
+		return;
+
+	int attacker = eventCauser;
+	if (!IS_VALID_INFECTED(attacker))
+		attacker = L4D_GetAttackerSmoker(victim);
+	if (!IS_VALID_INFECTED(attacker))
+		attacker = L4D_GetAttackerCharger(victim);
+	if (!IS_VALID_INFECTED(attacker))
+		attacker = L4D_GetAttackerJockey(victim);
+	if (!IS_VALID_INFECTED(attacker) && g_iLedgeCauseUserId[victim] > 0 && GetGameTime() - g_fLedgeCauseTime[victim] <= 10.0)
+		attacker = GetClientOfUserId(g_iLedgeCauseUserId[victim]);
+
+	if (IS_VALID_INFECTED(attacker) && attacker != victim)
+	{
+		char className[32];
+		int zombieClass = GetEntProp(attacker, Prop_Send, "m_zombieClass");
+		if (zombieClass > 0 && zombieClass < sizeof(g_csSIClassName_L4D2))
+			strcopy(className, sizeof(className), g_csSIClassName_L4D2[zombieClass]);
+		else
+			strcopy(className, sizeof(className), "特感");
+
+		CPrintToChatAll("%t", "LedgeHang_Caused", attacker, className, victim);
+		g_iLedgeCauseUserId[victim] = 0;
+		return;
+	}
+
+	CPrintToChatAll("%t", "LedgeHang_Self", victim);
+	g_iLedgeCauseUserId[victim] = 0;
+}
+
+void RememberLedgeHangCause(int victim, int attacker)
+{
+	if (IS_VALID_SURVIVOR(victim) && IS_VALID_INFECTED(attacker))
+	{
+		g_iLedgeCauseUserId[victim] = GetClientUserId(attacker);
+		g_fLedgeCauseTime[victim] = GetGameTime();
+	}
+}
+
+public void L4D2_OnPlayerFling_Post(int victim, int attacker, const float vecDir[3])
+{
+	RememberLedgeHangCause(victim, attacker);
+}
+
 public void OnPluginEnd()
 {
 	if (g_bL4D2Version) SkillAdvanced_OnPluginEnd();
@@ -727,6 +811,8 @@ void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 	
 	for ( int i = 1; i <= MaxClients; i++ )
 	{
+		g_iLedgeCauseUserId[i] = 0;
+		g_fLedgeCauseTime[i] = 0.0;
 		g_bIsHopping[i] = false;
 		
 		for ( int j = 1; j <= MaxClients; j++ )
@@ -1062,6 +1148,12 @@ void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast)
 void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) 
 {
 	int client = GetClientOfUserId(event.GetInt("userid"));
+	if (IS_VALID_CLIENT(client))
+	{
+		g_bLedgeWasHanging[client] = false;
+		g_iLedgeCauseUserId[client] = 0;
+		g_fLedgeCauseTime[client] = 0.0;
+	}
 	if ( !IS_VALID_INFECTED(client) ) { return; }
 	
 	int zClass = GetEntProp(client, Prop_Send, "m_zombieClass");
@@ -1675,6 +1767,8 @@ void Event_LungePounce(Event event, const char[] name, bool dontBroadcast)
 {
 	int client = GetClientOfUserId( event.GetInt("userid") );
 	int victim = GetClientOfUserId( event.GetInt("victim") );
+	if (IS_VALID_INFECTED(client) && IS_VALID_SURVIVOR(victim))
+		RememberLedgeHangCause(victim, client);
 	
 	g_fPinTime[client][0] = GetEngineTime();
 	
@@ -1897,6 +1991,7 @@ void Event_JockeyRide(Event event, const char[] name, bool dontBroadcast)
 	int victim = GetClientOfUserId( event.GetInt("victim") );
 	
 	if ( !IS_VALID_INFECTED(client) || !IS_VALID_SURVIVOR(victim) ) { return; }
+	RememberLedgeHangCause(victim, client);
 	
 	g_fPinTime[client][0] = GetEngineTime();
 	
@@ -1973,6 +2068,7 @@ void Event_ChargeCarryStart(Event event, const char[] name, bool dontBroadcast)
 	g_fPinTime[client][1] = 0.0;
 	
 	if ( !IS_VALID_SURVIVOR(victim) ) { return; }
+	RememberLedgeHangCause(victim, client);
 	
 	g_iChargeVictim[client] = victim;			// store who we're carrying (as long as this is set, it's not considered an impact charge flight)
 	g_iVictimCharger[victim] = client;			// store who's charging whom
@@ -1991,6 +2087,7 @@ void Event_ChargeImpact(Event event, const char[] name, bool dontBroadcast)
 	int client = GetClientOfUserId( event.GetInt("userid") );
 	int victim = GetClientOfUserId( event.GetInt("victim") );
 	if ( !IS_VALID_INFECTED(client) || !IS_VALID_SURVIVOR(victim) ) { return; }
+	RememberLedgeHangCause(victim, client);
 	
 	// remember how many people the charger bumped into, and who, and where they were
 	GetClientAbsOrigin( victim, g_fChargeVictimPos[victim] );
@@ -2785,6 +2882,7 @@ void Event_TongueGrab (Event event, const char[] name, bool dontBroadcast)
 	
 	if ( IS_VALID_INFECTED(attacker) && IS_VALID_SURVIVOR(victim) )
 	{
+		RememberLedgeHangCause(victim, attacker);
 		// int pull, clean damage
 		g_bSmokerClearCheck[attacker] = false;
 		g_bSmokerShoved[attacker] = false;

@@ -11,6 +11,12 @@
 Handle g_hVote = INVALID_HANDLE;
 Handle g_hCfgsKV = INVALID_HANDLE;
 ConVar g_hWitchCanSpawn = null;
+bool g_bPlayerVote;
+int g_iPlayerVoteInitiatorUserId;
+char g_sPlayerVoteTargetName[MAX_NAME_LENGTH];
+char g_sPlayerVoteInitiatorName[MAX_NAME_LENGTH];
+char g_sPlayerVoteTitle[MAX_NAME_LENGTH + 64];
+char g_sPlayerVotePassMessage[256];
 
 enum voteType
 {
@@ -383,6 +389,28 @@ public int VoteMenuHandler(Handle menu, MenuAction action, int param1, int param
 		char sInfo[64];
 		char sBuffer[64];
 		GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
+		char sType[32];
+		KvRewind(g_hCfgsKV);
+		if (KvJumpToKey(g_hCfgsKV, sInfo))
+		{
+			KvGetString(g_hCfgsKV, "type", sType, sizeof(sType));
+			if (StrEqual(sType, "player_vote", false))
+			{
+				KvGetString(g_hCfgsKV, "player_menu_title", sBuffer, sizeof(sBuffer), "选择投票对象:");
+				KvGetString(g_hCfgsKV, "vote_title", g_sPlayerVoteTitle, sizeof(g_sPlayerVoteTitle), "同意对 {target} 发起投票吗？");
+				KvGetString(g_hCfgsKV, "pass_message", g_sPlayerVotePassMessage, sizeof(g_sPlayerVotePassMessage), "{initiator} {lightgreen}投票通过");
+				ShowPlayerVoteTargetMenu(param1, sBuffer);
+				return 0;
+			}
+			if (StrEqual(sType, "command", false))
+			{
+				KvGetString(g_hCfgsKV, "command", sBuffer, sizeof(sBuffer));
+				if (sBuffer[0] != '\0')
+					FakeClientCommand(param1, "%s", sBuffer);
+				return 0;
+			}
+		}
+
 		KvRewind(g_hCfgsKV);
 		if (KvJumpToKey(g_hCfgsKV, sInfo) && KvGotoFirstSubKey(g_hCfgsKV))
 		{
@@ -410,6 +438,65 @@ public int VoteMenuHandler(Handle menu, MenuAction action, int param1, int param
 		delete menu;
 	}  */
 	
+	return 0;
+}
+
+void ShowPlayerVoteTargetMenu(int client, const char[] title)
+{
+	Menu menu = new Menu(PlayerVoteTargetMenuHandler);
+	menu.SetTitle(title);
+
+	char userId[16];
+	char playerName[MAX_NAME_LENGTH];
+	for (int target = 1; target <= MaxClients; target++)
+	{
+		if (!IsClientInGame(target) || IsFakeClient(target))
+			continue;
+
+		IntToString(GetClientUserId(target), userId, sizeof(userId));
+		GetClientName(target, playerName, sizeof(playerName));
+		menu.AddItem(userId, playerName);
+	}
+
+	if (menu.ItemCount == 0)
+	{
+		delete menu;
+		CPrintToChat(client, "%t", "Vote_None_Player");
+		return;
+	}
+
+	menu.ExitButton = true;
+	menu.Display(client, 20);
+}
+
+public int PlayerVoteTargetMenuHandler(Menu menu, MenuAction action, int client, int item)
+{
+	if (action == MenuAction_Select)
+	{
+		char userId[16];
+		menu.GetItem(item, userId, sizeof(userId));
+		int target = GetClientOfUserId(StringToInt(userId));
+		if (target > 0 && IsClientInGame(target) && !IsFakeClient(target))
+		{
+			g_iPlayerVoteInitiatorUserId = GetClientUserId(client);
+			GetClientName(target, g_sPlayerVoteTargetName, sizeof(g_sPlayerVoteTargetName));
+			GetClientName(client, g_sPlayerVoteInitiatorName, sizeof(g_sPlayerVoteInitiatorName));
+
+			char voteTitle[MAX_NAME_LENGTH + 64];
+			strcopy(voteTitle, sizeof(voteTitle), g_sPlayerVoteTitle);
+			ReplaceString(voteTitle, sizeof(voteTitle), "{target}", g_sPlayerVoteTargetName);
+			g_bPlayerVote = true;
+			if (!StartVote(client, voteTitle, true))
+			{
+				g_bPlayerVote = false;
+			}
+		}
+	}
+	else if (action == MenuAction_End)
+	{
+		delete menu;
+	}
+
 	return 0;
 }
 
@@ -474,7 +561,7 @@ public int ConfigsMenuHandler(Handle menu, MenuAction action, int param1, int pa
 	return 0;
 }
 
-bool StartVote(int client, const char[] cfgname)
+bool StartVote(int client, const char[] cfgname, bool includeInitiator = false)
 {
 	if (!IsBuiltinVoteInProgress())
 	{
@@ -487,8 +574,13 @@ bool StartVote(int client, const char[] cfgname)
 			{
 				continue;
 			}
-			if (GetClientTeam(i) == 1) continue;
+			if (GetClientTeam(i) == 1 && (!includeInitiator || i != client)) continue;
 			iPlayers[iNumPlayers++] = i;
+		}
+		if (iNumPlayers == 0)
+		{
+			CPrintToChat(client, "%t", "Vote_Process");
+			return false;
 		}
 		
 		char sBuffer[64];
@@ -522,11 +614,13 @@ public void VoteActionHandler(Handle vote, BuiltinVoteAction action, int param1,
 	{
 		case BuiltinVoteAction_End:
 		{
+			g_bPlayerVote = false;
 			g_hVote = INVALID_HANDLE;
 			CloseHandle(vote);
 		}
 		case BuiltinVoteAction_Cancel:
 		{
+			g_bPlayerVote = false;
 			DisplayBuiltinVoteFail(vote, view_as<BuiltinVoteFailReason>(param1));
 		}
 	}
@@ -540,6 +634,26 @@ public void VoteResultHandler(Handle vote, int num_votes, int num_clients, const
 		{
 			if (item_info[i][BUILTINVOTEINFO_ITEM_VOTES] >= (num_clients * 0.6))
 			{
+				if (g_bPlayerVote)
+				{
+					g_bPlayerVote = false;
+					char passMessage[sizeof(g_sPlayerVotePassMessage)];
+					strcopy(passMessage, sizeof(passMessage), g_sPlayerVotePassMessage);
+					ReplaceString(passMessage, sizeof(passMessage), "{initiator}", g_sPlayerVoteInitiatorName);
+					int initiator = GetClientOfUserId(g_iPlayerVoteInitiatorUserId);
+					if (initiator > 0 && IsClientInGame(initiator))
+					{
+						CPrintToChatAll("%s", passMessage);
+					}
+					else
+					{
+						ReplaceString(passMessage, sizeof(passMessage), "{teamcolor}", "{lightgreen}");
+						CPrintToChatAll("%s", passMessage);
+					}
+					DisplayBuiltinVotePass(vote, "MUA MUA MUA");
+					return;
+				}
+
 				char sCommand[PLATFORM_MAX_PATH];
 				strcopy(sCommand, sizeof(sCommand), g_sCfg);
 				if (sCommand[0] == '\0')

@@ -190,10 +190,12 @@ public void OnPhrasesReady() {
 	KeyValues kv;
 	char buffer[64];
 	char FilePath[PLATFORM_MAX_PATH];
+	char langCode[4];
 
 	int missions_len = al_missions.Length;
 	int chapters_len = al_chapters.Length;
 	for (int i; i < sizeof g_sLangCode; i++) {
+		strcopy(langCode, sizeof langCode, g_sLangCode[i]);
 		kv = new KeyValues("Phrases");
 		BuildPhrasePath(FilePath, sizeof FilePath, TRANSLATION_MISSIONS, g_sLangCode[i]);
 		if (!FileExists(FilePath)) {
@@ -217,7 +219,7 @@ public void OnPhrasesReady() {
 					if (!esp.official)
 						kv.SetString(g_sLangCode[i], esp.val);
 					else {
-						loc.PhraseTranslateToLang(esp.val, buffer, sizeof buffer, _, _, g_sLangCode[i], esp.val);
+						loc.PhraseTranslateToLang(esp.val, buffer, sizeof buffer, LANG_SERVER, "", langCode, esp.val);
 						kv.SetString(g_sLangCode[i], buffer);
 					}
 					kv.Rewind();
@@ -233,7 +235,7 @@ public void OnPhrasesReady() {
 						if (!esp.official)
 							kv.SetString(g_sLangCode[i], esp.val);
 						else {
-							loc.PhraseTranslateToLang(esp.val, buffer, sizeof buffer, _, _, g_sLangCode[i], esp.val);
+							loc.PhraseTranslateToLang(esp.val, buffer, sizeof buffer, LANG_SERVER, "", langCode, esp.val);
 							kv.SetString(g_sLangCode[i], buffer);
 						}
 						kv.SetString(g_sLangCode[i], esp.val);
@@ -270,7 +272,7 @@ public void OnPhrasesReady() {
 					if (!esp.official)
 						kv.SetString(g_sLangCode[i], esp.val);
 					else {
-						loc.PhraseTranslateToLang(esp.val, buffer, sizeof buffer, _, _, g_sLangCode[i], esp.val);
+						loc.PhraseTranslateToLang(esp.val, buffer, sizeof buffer, LANG_SERVER, "", langCode, esp.val);
 						kv.SetString(g_sLangCode[i], buffer);
 					}
 					kv.Rewind();
@@ -286,7 +288,7 @@ public void OnPhrasesReady() {
 						if (!esp.official)
 							kv.SetString(g_sLangCode[i], esp.val);
 						else {
-							loc.PhraseTranslateToLang(esp.val, buffer, sizeof buffer, _, _, g_sLangCode[i], esp.val);
+							loc.PhraseTranslateToLang(esp.val, buffer, sizeof buffer, LANG_SERVER, "", langCode, esp.val);
 							kv.SetString(g_sLangCode[i], buffer);
 						}
 						kv.Rewind();
@@ -604,7 +606,7 @@ void NextMap_Handler(L4D2NativeVote vote, VoteAction action, int param1, int par
 		}
 
 		case VoteAction_PlayerVoted:
-			CPrintToChatAll("{blue}%N {default}已投票", param1);
+			CPrintToChatAll("%N {lightgreen}投票了", param1);
 
 		case VoteAction_End: {
 			if (vote.YesCount > vote.NoCount) {
@@ -821,7 +823,7 @@ void ChangeMap_Handler(L4D2NativeVote vote, VoteAction action, int param1, int p
 		}
 
 		case VoteAction_PlayerVoted:
-			CPrintToChatAll("{blue}%N {default}已投票", param1);
+			CPrintToChatAll("%N {lightgreen}投票了", param1);
 
 		case VoteAction_End: {
 			if (vote.YesCount > vote.NoCount) {
