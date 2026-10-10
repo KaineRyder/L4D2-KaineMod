@@ -1,5 +1,13 @@
 "MatchModes"
 {
+	"AppleMod Configs"
+	{
+		"applemod"
+		{
+			"name" "AppleMod v0.85"
+		}
+	}
+
 	"ZoneMod Configs"
 	{
 		"zonemod"
