@@ -12,7 +12,7 @@
 	{
 		"zonemod"
 		{
-			"name" "ZoneMod 2.9.1b"
+			"name" "ZoneMod 2.9.2b"
 		}
 		"zoneretro"
 		{
@@ -20,7 +20,7 @@
 		}
 		"zonemod4K"
 		{
-			"name" "ZoneMod Quad"
+			"name" "KaineMod Quad (兼容旧ID)"
 		}
 		"advanced"
 		{
@@ -36,19 +36,42 @@
 		}
 		"zm3v3"
 		{
-			"name" "3v3 ZoneMod"
+			"name" "3v3 ZoneMod 2.9.2b"
 		}
 		"zm2v2"
 		{
-			"name" "2v2 ZoneMod"
+			"name" "2v2 ZoneMod 2.9.2b"
 		}
 		"zm1v1"
 		{
-			"name" "1v1 ZoneMod"
+			"name" "1v1 ZoneMod 2.9.2b"
 		}
 		"zm1v1nojockey"
 		{
-			"name" "1v1 ZoneMod (No Jockey)"
+			"name" "1v1 ZoneMod 2.9.2b (No Jockey)"
+		}
+	}
+	"KaineMod Configs"
+	{
+		"kainemod"
+		{
+			"name" "KaineMod 4v4"
+		}
+		"kaine3v3"
+		{
+			"name" "KaineMod 3v3"
+		}
+		"kaine2v2"
+		{
+			"name" "KaineMod 2v2"
+		}
+		"kaine1v1"
+		{
+			"name" "KaineMod 1v1"
+		}
+		"kaine4K"
+		{
+			"name" "KaineMod Quad"
 		}
 	}
 	"NeoMod Configs"
