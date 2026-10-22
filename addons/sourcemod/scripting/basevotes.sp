@@ -99,7 +99,7 @@ public void OnPluginStart()
 	RegAdminCmd("sm_votemap", Command_Votemap, ADMFLAG_VOTE|ADMFLAG_CHANGEMAP, "sm_votemap <mapname> [mapname2] ... [mapname5] ");
 	RegAdminCmd("sm_votekick", Command_Votekick, ADMFLAG_VOTE|ADMFLAG_KICK, "sm_votekick <player> [reason]");
 	RegAdminCmd("sm_voteban", Command_Voteban, ADMFLAG_VOTE|ADMFLAG_BAN, "sm_voteban <player> [reason]");
-	RegAdminCmd("sm_vote", Command_Vote, ADMFLAG_VOTE, "sm_vote <question> [Answer1] [Answer2] ... [Answer5]");
+	RegAdminCmd("sm_basevote", Command_Vote, ADMFLAG_VOTE, "sm_basevote <question> [Answer1] [Answer2] ... [Answer5]");
 
 	/*
 	g_Cvar_Show = FindConVar("sm_vote_show");
@@ -167,7 +167,7 @@ public Action Command_Vote(int client, int args)
 {
 	if (args < 1)
 	{
-		ReplyToCommand(client, "[SM] Usage: sm_vote <question> [Answer1] [Answer2] ... [Answer5]");
+		ReplyToCommand(client, "[SM] Usage: sm_basevote <question> [Answer1] [Answer2] ... [Answer5]");
 		return Plugin_Handled;	
 	}
 	

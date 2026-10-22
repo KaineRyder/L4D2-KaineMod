@@ -276,7 +276,7 @@ static void RM_Match_Unload(bool bForced = false)
 
 static Action RM_Match_MapRestart_Timer(Handle hTimer, DataPack hDp)
 {
-	ServerCommand("sm plugins load_lock");	  // Prevent plugin changes after the match plugin set is initialized.
+	// Plugin loading is intentionally left unlocked; the server needs runtime plugin changes.
 
 	if (RM_bDebugEnabled || IsDebugEnabled())
 	{

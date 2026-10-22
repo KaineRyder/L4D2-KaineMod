@@ -398,7 +398,7 @@ public int VoteMenuHandler(Handle menu, MenuAction action, int param1, int param
 			{
 				KvGetString(g_hCfgsKV, "player_menu_title", sBuffer, sizeof(sBuffer), "选择投票对象:");
 				KvGetString(g_hCfgsKV, "vote_title", g_sPlayerVoteTitle, sizeof(g_sPlayerVoteTitle), "同意对 {target} 发起投票吗？");
-				KvGetString(g_hCfgsKV, "pass_message", g_sPlayerVotePassMessage, sizeof(g_sPlayerVotePassMessage), "{initiator} {lightgreen}投票通过");
+				KvGetString(g_hCfgsKV, "pass_message", g_sPlayerVotePassMessage, sizeof(g_sPlayerVotePassMessage), "{target} {lightgreen}投票通过");
 				ShowPlayerVoteTargetMenu(param1, sBuffer);
 				return 0;
 			}
@@ -639,7 +639,7 @@ public void VoteResultHandler(Handle vote, int num_votes, int num_clients, const
 					g_bPlayerVote = false;
 					char passMessage[sizeof(g_sPlayerVotePassMessage)];
 					strcopy(passMessage, sizeof(passMessage), g_sPlayerVotePassMessage);
-					ReplaceString(passMessage, sizeof(passMessage), "{initiator}", g_sPlayerVoteInitiatorName);
+					ReplaceString(passMessage, sizeof(passMessage), "{target}", g_sPlayerVoteTargetName);
 					int initiator = GetClientOfUserId(g_iPlayerVoteInitiatorUserId);
 					if (initiator > 0 && IsClientInGame(initiator))
 					{

@@ -5,7 +5,7 @@
 		"type" "player_vote"
 		"player_menu_title" "选择亲亲对象:"
 		"vote_title" "同意亲亲 {target} 吗？"
-		"pass_message" "{initiator} 回复了你：{lightgreen}MUA MUA MUA"
+		"pass_message" "{target} 回复了你：{lightgreen}MUA MUA MUA"
 	}
 	"开关 Witch"
 	{
