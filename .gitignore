@@ -31,3 +31,7 @@ $RECYCLE.BIN/
 
 # Firecrawl working cache
 .firecrawl/
+
+# Codex local deployment snapshots and research checkout
+/.codex-local/
+/openspec/

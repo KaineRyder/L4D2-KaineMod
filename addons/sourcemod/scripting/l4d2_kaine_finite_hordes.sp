@@ -107,14 +107,8 @@ void Event_FinaleStart(Event event, const char[] name, bool dontBroadcast)
 
 MRESReturn Detour_OnMapInvokedPanicEvent_Post(int director, Handle hReturn, Handle hParams)
 {
-	bool nullActivator = DHookIsNullParam(hParams, 1);
-	bool nullPanicType = DHookIsNullParam(hParams, 2);
-	LogMessage("[KaineFiniteHorde] detour entered: nullActivator=%d nullPanicType=%d", nullActivator, nullPanicType);
-	if (nullPanicType)
-	{
-		return MRES_Ignored;
-	}
-
+	// Gamedata declares argument 2 as an int, not a pointer; DHookIsNullParam
+	// is only valid for pointer arguments.
 	int panicType = DHookGetParam(hParams, 2);
 	LogMessage("[KaineFiniteHorde] panic detour: type=%d finale=%d", panicType, g_bFinaleStarted);
 	if (panicType == 1)

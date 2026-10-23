@@ -682,8 +682,8 @@
 	"HandleCarAlarmTriggered_1"
 	{
 		"en"		"{olive}%N{default} triggered an alarm with a hit."
-		"zho"		"{green}[高光操作]{default} {olive}%N{default} 打到了警報車."
-		"chi"		"{green}[高光操作]{default} {olive}%N{default} 打到了警报车."
+		"zho"		"{green}[铸币操作]{default} {olive}%N{default} 打到了警報車."
+		"chi"		"{green}[铸币操作]{default} {olive}%N{default} 打到了警报车."
 	}
 	"HandleCarAlarmTriggered_2"
 	{
