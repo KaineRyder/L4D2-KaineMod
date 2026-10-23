@@ -1,0 +1,32 @@
+"Games"
+{
+	"left4dead2"
+	{
+		"Functions"
+		{
+			"CTerrorPlayer::FireBullet"
+			{
+				"signature"	"CTerrorPlayer::FireBullet"
+				"callconv"	"thiscall"
+				"return"	"void"
+				"this"		"entity"
+				"arguments"
+				{
+					"origin"	{ "type" "vector" }
+					"angles"	{ "type" "vectorptr" }
+					"weaponId"	{ "type" "int" }
+					"damage"	{ "type" "int" }
+				}
+			}
+		}
+		"Signatures"
+		{
+			"CTerrorPlayer::FireBullet"
+			{
+				"library"	"server"
+				"linux"	"@_ZN13CTerrorPlayer10FireBulletE6VectorRK6QAngle10CSWeaponIDi"
+				"windows"	"\x55\x8b\xec\x81\xec\x2a\x2a\x2a\x2a\x8b\x45\x18\x57\x8b\xf9"
+			}
+		}
+	}
+}

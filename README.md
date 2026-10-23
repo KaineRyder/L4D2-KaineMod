@@ -1,108 +1,63 @@
-# **L4D2 Competitive Rework**
+# KaineMod
 
-**IMPORTANT NOTES** - **DON'T IGNORE THESE!**
-* The goal for this repo is to work on **Linux**, but Windows support is available.
-* Ensure that your machine is running at least **Ubuntu 22.04** (GLIBC minimum of 2.35)
-> While Windows is supported by the repository, there may be things that don't fully function on Windows that we may have missed.
-> Please report any issues you run into!
-* This repository only supports Sourcemod **1.12** and up.
-* Everything on this repository is confirmed to be working on **1.12**+ (specifically **1.12.7195**) as of the 26th of March, 2025.
+KaineMod 是面向《Left 4 Dead 2》对抗模式服务器的自定义比赛配置，基于本仓库原有的 ZoneMod 玩法调整并独立维护。原生 ZoneMod 配置单独保留并更新到 2.9.2b，KaineMod 的后续改动不会覆盖原生配置。
 
-## **About:**
+## 模式
 
-This project started off with a focus on reworking the very outdated platform for competitive L4D2.
-In its current state it allows anyone to host their own up to date competitive L4D2 servers.
-This project is **Actively Developed**.
+- 4v4：`kainemod`
+- 3v3：`kaine3v3`
+- 2v2：`kaine2v2`
+- 1v1：`kaine1v1`
+- Quad：`kaine4K`
 
-> **Included Matchmodes:**
-* **Zonemod 2.9.1b**
-* **Zonemod Hunters**
-* **Zonemod Retro**
-* **NeoMod 0.4a** 
-* **NextMod 1.0.5**
-* **Promod Elite 1.1**
-* **Acemod Revamped 1.2**
-* **Equilibrium 3.0c**
-* **Apex 1.1.2**
+## 枪械相关
 
----
+- MP5 与普通冲锋枪、消音冲锋枪共用冲锋枪组上限 3，且mp5会自然刷新
+- 木狙鸟狙栓狙APW共用狙击枪组上限 1。
+- 五种 KaineMod 模式的 Magnum 持有上限为 2，Hunter 上限为 2；Quad 使用独立规则配置。
+- 各人数模式使用对应的 KaineMod 配置；Quad 保留独立的 Quad 规则。
+- 倒地时保留 Magnum；倒地期间散布参数乘以 1.25、射击间隔乘以 1.2，起身后立即恢复。伤害和距离衰减不变。
 
-## **Important Notes**
-* We've added "**mv_maxplayers**" that replaces sv_maxplayers in the Server.cfg, this is used to prevent it from being overwritten every map change.
-  * On config unload, the value will be to the value used in the Server.cfg
-* Every Confogl matchmode will now execute 2 additional files, namely "**sharedplugins.cfg**" and "**generalfixes.cfg**" which are located in your **left4dead2/cfg** folder.
-  * "**General Fixes**" simply ensures that all the Fixes discussed in here are loaded by every Matchmode.
-  * "**Shared Plugins**" is for you, the Server host. You surely have some plugins that you'd like to be loaded in every matchmode, you can define them here. 
-    * **NOTE:** Plugin load locking and unlocking is no longer handled by the Configs themselves, so if you're using this project do **NOT** define plugin load locks/unlocks within the configs you're adding manually.
+## 关卡流程
 
----
-	
-## **Credits:**
+- 机关触发的 crescendo 按整局共享额度累计：地图 `horde_limit` 是本局额度，未配置时默认为 150。额度在回合开始时重置；同一局内重复触发机关不会重置计数。警报车尸潮及救援关/最终关尸潮不受此限制，也不计入机关额度。
+- witch为可选项，
 
-> **Foundation/Advanced Work:**
-* A1m`
-* AlliedModders LLC.
-* "Confogl Team"
-* Dr!fter
-* Forgetest
-* Jahze
-* Lux
-* Prodigysim
-* Silvers
-* XutaxKamay
-* Visor
+## 枪械数据
 
-> **Additional Plugins/Extensions:**
-* Accelerator74
-* Arti 
-* AtomicStryker 
-* Backwards
-* BHaType
-* Blade 
-* Buster
-* Canadarox 
-* CircleSquared 
-* Darkid 
-* DarkNoghri
-* Dcx 
-* Devilesk
-* Die Teetasse 
-* Disawar1 
-* Don 
-* Dragokas
-* Dr. Gregory House
-* Epilimic 
-* Estoopi 
-* Griffin 
-* Harry Potter
-* Jacob 
-* Luckylock 
-* Madcap
-* Mr. Zero
-* Nielsen
-* Powerlord
-* Rena
-* Sheo
-* Sir
-* Spoon
-* Stabby 
-* Step 
-* Tabun
-* Target
-* TheTrick
-* V10 
-* Vintik
-* VoiDeD
-* xoxo
-* $atanic $pirit
+以下为 KaineMod 枪械参数。扩散栏分列蹲伏、站立、MaxSpread 与 MaxMovementSpread；换弹耗时为游戏秒。“加衰距离”为子弹超过射程后的额外飞行距离，未单独设置时标为“—”。KaineMod 覆盖的参数按配置填写，其余数值保留游戏脚本设定。
+
+| 武器 | 伤害 | 衰减 | 射程 | 加衰距离 | 蹲伏扩散 | 站立扩散 | 最大扩散（MaxSpread） | 移动最大扩散（MaxMovementSpread） | 弹匣 | 换弹耗时 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 小手枪 | 16×4 | 0.6 | 3000 | — | 0.56 | 0.98 | 2.92 | — | 30 | — |
+| 马格南 | 80 | 0.8 | 3500 | — | 0 | 0.8 | 3.0 | — | 30 | — |
+| Uzi | 20 | 0.85 | 2300 | — | 0.7 | 1.0 | 28 | 2.0 | 50 | 1.7 s |
+| Mac-10 (MAC-10) | 29 | 0.63 | 2100 | 900 | 0.85 | 1.2 | 30 | 2.35 | 50 | 2.27 s |
+| MP5 | 24 | 0.83 | 2100 | — | 0.75 | 1.1 | 30 | 2.35 | 60 | 2.3 s |
+| Pump Shotgun (泵动式霰弹枪) | 16×17 | 0.7 | 3000 | 无 | 0 | 0.8 | 1.5 | — | 8 | — |
+| Chrome Shotgun (铬合金霰弹枪) | 28×9 | 0.65 | 3000 | 无 | 0 | 0.8 | 1.5 | — | 8 | — |
+| Hunting Rifle (木狙) | 60 | 1.0 | 8192 | 无衰减 | 0 | 0.1 | 3 | — | 15 | — |
+| Military Sniper (军狙) | 60 | 1.0 | 8192 | 无衰减 | 0 | 0.1 | 3 | — | 15 | — |
+| Scout | 100 | 0.9 | 4000 | 400 | 0 | 0.1 | 4.05 | — | 10 | — |
+| AWP | 120 | 0.8 | 4000 | 1000 | 0 | 0 | 10 | — | 6 | — |
+
+泵动式霰弹枪在 Quad 模式下改为 17×16；霰弹枪的“伤害×弹丸数”表示单发每颗弹丸伤害与弹丸数。
+
+木狙另设射击间隔 0.40 秒、对 Tank 伤害倍率 0.75；军狙对 Tank 伤害倍率 0.5。
+
+### 枪械组上限
+
+限制插件统计当前存活生还者持有的对应武器总数。“未设置”表示该人数配置没有为该组添加数量限制。
+
+| 武器组 | KaineMod 4v4 / Quad | KaineMod 3v3 / 2v2 | KaineMod 1v1 |
+| --- | ---: | ---: | ---: |
+| 普通、消音冲锋枪与 MP5 | 3 | 3 | 3 |
+| 木泵动与 Chrome 霰弹枪 | 3 | 未设置 | 未设置 |
+| 马格南 | 2 | 2 | 2 |
+| 猎枪、军用狙击枪、Scout 与 AWP | 1 | 1 | 1 |
+| 自动霰弹枪、SPAS、步枪、榴弹发射器与 M60 | 禁用（0） | 未设置 | 未设置 |
+
+Quad 使用独立武器参数：冲锋枪装填时间为 1.8 秒；木泵动霰弹枪伤害为 17、弹丸为 16。详见 `cfg/cfgogl/kaine4K/shared_settings.cfg`。
 
 
-> **Competitive Mapping Rework:**
-* Aiden
-* Derpduck
-
-> **Testing/Issue Reporting:**
-* Too many to list, keep up the great work in reporting issues!
-
-**NOTE:** If your work is being used and I forgot to credit you, my sincere apologies.  
-I've done my best to include everyone on the list, simply create an issue and name the plugin/extension you've made/contributed to and I'll make sure to credit you properly.
+KaineMod 基于 [SirPlease/L4D2-Competitive-Rework](https://github.com/SirPlease/L4D2-Competitive-Rework) 的比赛配置体系维护。

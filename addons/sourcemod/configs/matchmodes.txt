@@ -55,7 +55,7 @@
 	{
 		"kainemod"
 		{
-			"name" "KaineMod 4v4"
+      		"name" "KaineMod 1.0.0"
 		}
 		"kaine3v3"
 		{

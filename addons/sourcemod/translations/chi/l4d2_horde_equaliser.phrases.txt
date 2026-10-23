@@ -2,18 +2,18 @@
 {
 	"Tag"
 	{
-		"chi"		"<{olive}尸潮{default}>"
+		"chi"		"{olive}【有限尸潮】{default}"
 	}
 	"NoCommonRemaining"
 	{
-		"chi"		"{red}没有{default}普通感染者了！"
+		"chi"		"{red}没有小僵尸了！"
 	}
 	"CommonRemaining"
 	{
-		"chi"		"{red}%i {default}个普通感染者剩余.."
+		"chi"		"还剩{red}%i {default}个小僵尸.."
 	}
 	"FiniteEventStarted"
 	{
-		"chi"		"一场{blue}有限尸潮{default}开始了！本轮共有{olive}%i{default}个普通感染者！是冲还是等，你来决定！"
+		"chi"		"本次{blue}机关尸潮{default}为有限尸潮，共计 {olive}%i{default} 只普通感染者！冲还是守，由你决定！"
 	}
 }

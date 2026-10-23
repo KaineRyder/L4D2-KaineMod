@@ -4,11 +4,11 @@
 TBD - created by archiving change separate-kaine-and-zonemod-configs. Update Purpose after archive.
 ## Requirements
 ### Requirement: KaineMod 提供所需人数模式
-模式注册表 MUST 提供独立的 KaineMod 4v4、3v3、2v2、1v1 和 Quad 模式，并使用能标明 KaineMod 及对应人数或类型的显示名称。
+模式注册表 MUST 提供独立的 KaineMod 1.0.0、3v3、2v2、1v1 和 Quad 模式，并使用能标明 KaineMod 及对应人数或类型的显示名称。
 
 #### Scenario: 查看 KaineMod 模式列表
 - **WHEN** 模式选择器读取 `matchmodes.txt`
-- **THEN** 列表中分别显示 KaineMod 4v4、3v3、2v2、1v1 和 Quad 模式
+- **THEN** 列表中分别显示 KaineMod 1.0.0、3v3、2v2、1v1 和 Quad 模式
 
 ### Requirement: KaineMod 人数变体使用独立配置
 每个 KaineMod 模式 MUST 加载匹配人数的设置及 Kaine 专属依赖，包括 ReadyUp 名称、插件列表、变量、地图变量目录、Stripper 选择和适用的卸载配置。
