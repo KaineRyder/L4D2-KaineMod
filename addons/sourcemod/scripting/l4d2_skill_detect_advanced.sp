@@ -21,10 +21,8 @@
 #define HITTABLE_OWNER_TIME 1.00
 #define DAMAGE_DEDUPE_TIME 0.20
 #define HITTABLE_DEDUPE_TIME 0.60
-#define CHARGER_TEAMKILL_CHARGE_GRACE 0.35
 #define CHARGER_TEAMKILL_SHOT_TIME 0.10
 #define CHARGER_TEAMKILL_MAX_CHARGE_TIME 12.0
-#define CHARGER_TEAMKILL_DEATH_GRACE 1.00
 #define CHARGER_TEAMKILL_EVENT_DEDUPE 0.25
 
 #define MULTI_CONTROL_MIN 2
@@ -83,7 +81,6 @@ float g_fChargerLastChargingGun[MAXPLAYERS + 1];
 bool g_bChargerChargeActive[MAXPLAYERS + 1];
 bool g_bChargerChargeHitTarget[MAXPLAYERS + 1];
 float g_fChargerChargeStart[MAXPLAYERS + 1];
-float g_fChargerChargeEndGrace[MAXPLAYERS + 1];
 
 // Boomer 喷吐状态：同一次喷吐检测窗口内，每名受害者只记录一次。
 bool g_bBoomerVictim[MAXPLAYERS + 1][MAXPLAYERS + 1];
@@ -488,15 +485,12 @@ void TrackChargerGunDamage(Event event, int charger)
 		BeginChargerCharge(charger);
 	}
 
-	// 最后的 player_hurt 事件到来前，m_isCharging 可能已经被清零。优先使用
-	// 冲锋开始/撞击事件窗口进行判断，再用网络属性兜底，并给同帧伤害留出短暂宽限时间。
-	bool inChargeWindow = IsChargerChargeWindow(charger, now) || charging;
-	if (!inChargeWindow && g_bChargerGunTracking[charger] &&
-		g_fChargerLastChargingGun[charger] > 0.0 &&
-		now - g_fChargerLastChargingGun[charger] <= CHARGER_TEAMKILL_CHARGE_GRACE)
+	// 冲锋状态一旦结束就立即关闭统计窗口，不使用停止后的伤害宽限。
+	if (!charging && g_bChargerChargeActive[charger])
 	{
-		inChargeWindow = true;
+		EndChargerCharge(charger);
 	}
+	bool inChargeWindow = charging && IsChargerChargeWindow(charger, now);
 	if (inChargeWindow)
 	{
 		g_bChargerGunTracking[charger] = true;
@@ -683,25 +677,6 @@ public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if (client > 0 && client <= MaxClients)
 	{
-		if (IsValidInfected(client) && GetZombieClass(client) == ZC_CHARGER &&
-			!g_bChargerGunLethal[client])
-		{
-			// 某些游戏版本的最后一次 player_hurt 事件不会带 health==0。
-			// 当已追踪的伤害和冲锋窗口确认是冲锋击杀时，从 player_death 恢复致命枪击。
-			char deathWeapon[64];
-			event.GetString("weapon", deathWeapon, sizeof(deathWeapon));
-			int deathType = event.GetInt("type", 0);
-			int deathAttacker = GetClientOfUserId(event.GetInt("attacker"));
-			if (IsValidSurvivor(deathAttacker) &&
-				IsChargerFirearm(deathWeapon, deathType) &&
-				HasRecentChargerGunDamage(client, GetGameTime()))
-			{
-				g_bChargerGunLethal[client] = true;
-				g_bChargerGunLethalDuringCharge[client] = true;
-				g_iChargerGunLethalAttacker[client] = deathAttacker;
-			}
-		}
-
 		if (g_bChargerGunLethal[client])
 		{
 			int attacker = GetClientOfUserId(event.GetInt("attacker"));
@@ -1547,7 +1522,6 @@ void BeginChargerCharge(int charger)
 	g_bChargerChargeHitTarget[charger] = false;
 	g_bChargerChargeActive[charger] = true;
 	g_fChargerChargeStart[charger] = now;
-	g_fChargerChargeEndGrace[charger] = 0.0;
 }
 
 void EndChargerCharge(int charger, bool hitTarget = false)
@@ -1560,10 +1534,10 @@ void EndChargerCharge(int charger, bool hitTarget = false)
 	if (hitTarget)
 	{
 		// The game can leave m_isCharging set for a few frames after impact.
-		// Lock this charge out so post-impact shots are not reported as a
-		// charger kill while charging. The lock is cleared by the next charge.
-		ResetChargerGunState(charger);
+		// Keep already confirmed lethal damage, but close this charge immediately.
 		g_bChargerChargeHitTarget[charger] = true;
+		g_bChargerChargeActive[charger] = false;
+		g_fChargerChargeStart[charger] = 0.0;
 		return;
 	}
 
@@ -1572,8 +1546,9 @@ void EndChargerCharge(int charger, bool hitTarget = false)
 		return;
 	}
 
-	g_fChargerChargeEndGrace[charger] = GetGameTime() +
-		CHARGER_TEAMKILL_CHARGE_GRACE;
+	g_bChargerChargeActive[charger] = false;
+	g_bChargerChargeHitTarget[charger] = true;
+	g_fChargerChargeStart[charger] = 0.0;
 }
 
 bool IsChargerChargeWindow(int charger, float now)
@@ -1589,47 +1564,12 @@ bool IsChargerChargeWindow(int charger, float now)
 	if (now - g_fChargerChargeStart[charger] > CHARGER_TEAMKILL_MAX_CHARGE_TIME)
 	{
 		g_bChargerChargeActive[charger] = false;
+		g_bChargerChargeHitTarget[charger] = true;
 		g_fChargerChargeStart[charger] = 0.0;
-		g_fChargerChargeEndGrace[charger] = 0.0;
-		return false;
-	}
-
-	if (g_fChargerChargeEndGrace[charger] > 0.0 &&
-		now > g_fChargerChargeEndGrace[charger])
-	{
-		g_bChargerChargeActive[charger] = false;
-		g_fChargerChargeStart[charger] = 0.0;
-		g_fChargerChargeEndGrace[charger] = 0.0;
 		return false;
 	}
 
 	return true;
-}
-
-bool HasChargerGunDamage(int charger)
-{
-	if (charger <= 0 || charger > MaxClients)
-	{
-		return false;
-	}
-
-	for (int survivor = 1; survivor <= MaxClients; survivor++)
-	{
-		if (g_iChargerGunDamage[charger][survivor] > 0)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
-bool HasRecentChargerGunDamage(int charger, float now)
-{
-	return HasChargerGunDamage(charger) &&
-		g_bChargerGunTracking[charger] &&
-		g_fChargerLastChargingGun[charger] > 0.0 &&
-		now - g_fChargerLastChargingGun[charger] <= CHARGER_TEAMKILL_DEATH_GRACE;
 }
 
 int GetZombieClass(int client)
@@ -1738,7 +1678,6 @@ void ResetChargerGunState(int client)
 	g_bChargerChargeActive[client] = false;
 	g_bChargerChargeHitTarget[client] = false;
 	g_fChargerChargeStart[client] = 0.0;
-	g_fChargerChargeEndGrace[client] = 0.0;
 
 	for (int survivor = 1; survivor <= MaxClients; survivor++)
 	{

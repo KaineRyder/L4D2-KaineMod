@@ -591,8 +591,26 @@ public Action Timer_FallbackLive(Handle timer, int token)
 
 public Action Timer_CheckMultiControl(Handle timer)
 {
+	RecordTankEncounterCasualties();
 	TryTriggerMultiControlWipe();
 	return Plugin_Continue;
+}
+
+void RecordTankEncounterCasualties()
+{
+	if (!g_bTankSeen || g_bTankOutcomeResolved || g_bRoundEnding)
+	{
+		return;
+	}
+
+	for (int survivor = 1; survivor <= MaxClients; survivor++)
+	{
+		if (IsSurvivor(survivor) &&
+			(!IsPlayerAlive(survivor) || IsSurvivorIncapacitated(survivor)))
+		{
+			g_bTankEncounterCasualty = true;
+		}
+	}
 }
 
 bool TryTriggerMultiControlWipe(bool endingNow = false)
@@ -992,7 +1010,7 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast)
 		return;
 	}
 
-	if (IsSurvivor(victim) && g_bTankSeen && !g_bTankKilled &&
+	if (IsSurvivor(victim) && g_bTankSeen &&
 		!g_bTankOutcomeResolved)
 	{
 		g_bTankEncounterCasualty = true;
@@ -1018,7 +1036,7 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast)
 
 void Event_SurvivorDowned(Event event, const char[] name, bool dontBroadcast)
 {
-	if (!g_bTankSeen || g_bTankKilled || g_bTankOutcomeResolved || g_bRoundEnding)
+	if (!g_bTankSeen || g_bTankOutcomeResolved || g_bRoundEnding)
 	{
 		return;
 	}
@@ -1121,7 +1139,6 @@ void CaptureTankKillState()
 
 	g_bTankKilled = true;
 	g_bTankKillHadFreeSurvivor = CountFreeUprightSurvivors() > 0;
-	g_bTankPerfect = !g_bTankEncounterCasualty;
 }
 
 public Action Timer_ResolveTankDeath(Handle timer, int token)
@@ -1161,6 +1178,12 @@ void ResolveTankDeath(bool force)
 
 	g_bTankDeathPending = false;
 	CaptureTankKillState();
+	RecordTankEncounterCasualties();
+	if (CountIncapacitatedSurvivors() > 0)
+	{
+		g_bTankEncounterCasualty = true;
+	}
+	g_bTankPerfect = !g_bTankEncounterCasualty;
 	if (!g_bTankKillHadFreeSurvivor && TryTriggerMultiControlWipe(true))
 	{
 		return;

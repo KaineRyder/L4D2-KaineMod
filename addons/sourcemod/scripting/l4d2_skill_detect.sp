@@ -1157,6 +1157,7 @@ void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 	if ( !IS_VALID_INFECTED(client) ) { return; }
 	
 	int zClass = GetEntProp(client, Prop_Send, "m_zombieClass");
+	g_iSpecialVictim[client] = 0;
 	
 	g_fSpawnTime[client] = GetEngineTime();
 	g_fPinTime[client][0] = 0.0;
@@ -2069,6 +2070,7 @@ void Event_ChargeCarryStart(Event event, const char[] name, bool dontBroadcast)
 	
 	if ( !IS_VALID_SURVIVOR(victim) ) { return; }
 	RememberLedgeHangCause(victim, client);
+	g_iSpecialVictim[client] = victim;
 	
 	g_iChargeVictim[client] = victim;			// store who we're carrying (as long as this is set, it's not considered an impact charge flight)
 	g_iVictimCharger[victim] = client;			// store who's charging whom
@@ -2113,19 +2115,42 @@ void Event_ChargeCarryEnd(Event event, const char[] name, bool dontBroadcast)
 {
 	int client = GetClientOfUserId( event.GetInt("userid") );
 	if ( client < 1 || client > MaxClients ) { return; }
-	
+	int victim = GetClientOfUserId(event.GetInt("victim"));
+	if (!IS_VALID_SURVIVOR(victim) || g_iChargeVictim[client] != victim)
+	{
+		return;
+	}
+
 	g_fPinTime[client][1] = GetEngineTime();
-	
-	// delay so we can check whether charger died 'mid carry'
-	CreateTimer( 0.1, Timer_ChargeCarryEnd, client, TIMER_FLAG_NO_MAPCHANGE );
+
+	// Keep the carried survivor and start time briefly so the Charger death
+	// handler can report the clear, then discard stale carry state.
+	DataPack pack;
+	CreateDataTimer(0.1, Timer_ChargeCarryEnd, pack, TIMER_FLAG_NO_MAPCHANGE);
+	pack.WriteCell(GetClientUserId(client));
+	pack.WriteCell(victim);
+	pack.WriteFloat(g_fPinTime[client][0]);
 }
 
-Action Timer_ChargeCarryEnd( Handle timer, int client )
+Action Timer_ChargeCarryEnd(Handle timer, DataPack pack)
 {
-	// set charge time to 0 to avoid deathcharge timer continuing
-	g_iChargeVictim[client] = 0;		// unset this so the repeated timer knows to stop for an ongroundcheck
+	pack.Reset();
+	int client = GetClientOfUserId(pack.ReadCell());
+	int victim = pack.ReadCell();
+	float carryStart = pack.ReadFloat();
+	if (client <= 0 || client > MaxClients ||
+		g_fPinTime[client][0] != carryStart || g_iChargeVictim[client] != victim)
+	{
+		return Plugin_Stop;
+	}
 
-	return Plugin_Continue;
+	// End the death-charge tracking and clear this completed carry.
+	g_iChargeVictim[client] = 0;
+	g_iSpecialVictim[client] = 0;
+	g_fPinTime[client][0] = 0.0;
+	g_fPinTime[client][1] = 0.0;
+
+	return Plugin_Stop;
 }
 
 Action Timer_ChargeCheck( Handle timer, int userid )

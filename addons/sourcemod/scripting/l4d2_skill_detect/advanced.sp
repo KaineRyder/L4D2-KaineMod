@@ -14,10 +14,8 @@
 #define SkillAdvanced_HITTABLE_OWNER_TIME 1.00
 #define SkillAdvanced_DAMAGE_DEDUPE_TIME 0.20
 #define SkillAdvanced_HITTABLE_DEDUPE_TIME 0.60
-#define SkillAdvanced_CHARGER_TEAMKILL_CHARGE_GRACE 0.35
 #define SkillAdvanced_CHARGER_TEAMKILL_SHOT_TIME 0.10
 #define SkillAdvanced_CHARGER_TEAMKILL_MAX_CHARGE_TIME 12.0
-#define SkillAdvanced_CHARGER_TEAMKILL_DEATH_GRACE 1.00
 #define SkillAdvanced_CHARGER_TEAMKILL_EVENT_DEDUPE 0.25
 
 #define SkillAdvanced_MULTI_CONTROL_MIN 2
@@ -68,7 +66,6 @@ float SkillAdvanced_g_fChargerLastChargingGun[MAXPLAYERS + 1];
 bool SkillAdvanced_g_bChargerChargeActive[MAXPLAYERS + 1];
 bool SkillAdvanced_g_bChargerChargeHitTarget[MAXPLAYERS + 1];
 float SkillAdvanced_g_fChargerChargeStart[MAXPLAYERS + 1];
-float SkillAdvanced_g_fChargerChargeEndGrace[MAXPLAYERS + 1];
 
 // Boomer 喷吐状态：同一次喷吐检测窗口内，每名受害者只记录一次。
 bool SkillAdvanced_g_bBoomerVictim[MAXPLAYERS + 1][MAXPLAYERS + 1];
@@ -323,12 +320,7 @@ public void SkillAdvanced_Event_ChargerImpact(Event event, const char[] name, bo
 	int charger = GetClientOfUserId(event.GetInt("userid"));
 	int victim = GetClientOfUserId(event.GetInt("victim"));
 	SkillAdvanced_RegisterChargerVictim(charger, victim);
-	if (charger > 0 && charger <= MaxClients && !SkillAdvanced_g_bChargerCarrying[charger])
-	{
-		// Defer clearing gun attribution: a carry-start event may follow this impact.
-		SkillAdvanced_g_bChargerChargeHitTarget[charger] = true;
-		SkillAdvanced_g_bChargerChargeActive[charger] = false;
-	}
+	SkillAdvanced_EndChargerCharge(charger, true);
 }
 
 public void SkillAdvanced_Event_ChargerCarryStart(Event event, const char[] name, bool dontBroadcast)
@@ -339,9 +331,7 @@ public void SkillAdvanced_Event_ChargerCarryStart(Event event, const char[] name
 	if (charger > 0 && charger <= MaxClients)
 	{
 		SkillAdvanced_g_bChargerCarrying[charger] = true;
-		SkillAdvanced_g_bChargerChargeHitTarget[charger] = false;
-		SkillAdvanced_g_bChargerGunTracking[charger] = true;
-		SkillAdvanced_g_fChargerLastChargingGun[charger] = GetGameTime();
+		SkillAdvanced_EndChargerCharge(charger, true);
 	}
 }
 
@@ -474,16 +464,13 @@ void SkillAdvanced_TrackChargerGunDamage(Event event, int charger)
 		SkillAdvanced_BeginChargerCharge(charger);
 	}
 
-	// 最后的 player_hurt 事件到来前，m_isCharging 可能已经被清零。优先使用
-	// 冲锋开始/撞击事件窗口进行判断，再用网络属性兜底，并给同帧伤害留出短暂宽限时间。
-	bool inChargeWindow = SkillAdvanced_g_bChargerCarrying[charger] ||
-		SkillAdvanced_IsChargerChargeWindow(charger, now) || charging;
-	if (!inChargeWindow && SkillAdvanced_g_bChargerGunTracking[charger] &&
-		SkillAdvanced_g_fChargerLastChargingGun[charger] > 0.0 &&
-		now - SkillAdvanced_g_fChargerLastChargingGun[charger] <= SkillAdvanced_CHARGER_TEAMKILL_CHARGE_GRACE)
+	// The charge window ends at impact or when the game ends charging. Carrying
+	// a survivor must not reopen it, and post-charge damage has no grace period.
+	if (!charging && SkillAdvanced_g_bChargerChargeActive[charger])
 	{
-		inChargeWindow = true;
+		SkillAdvanced_EndChargerCharge(charger);
 	}
+	bool inChargeWindow = charging && SkillAdvanced_IsChargerChargeWindow(charger, now);
 	if (inChargeWindow)
 	{
 		SkillAdvanced_g_bChargerGunTracking[charger] = true;
@@ -670,25 +657,6 @@ public void SkillAdvanced_Event_PlayerDeath(Event event, const char[] name, bool
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if (client > 0 && client <= MaxClients)
 	{
-		if (SkillAdvanced_IsValidInfected(client) && SkillAdvanced_GetZombieClass(client) == SkillAdvanced_ZC_CHARGER &&
-			!SkillAdvanced_g_bChargerGunLethal[client])
-		{
-			// 某些游戏版本的最后一次 player_hurt 事件不会带 health==0。
-			// 当已追踪的伤害和冲锋窗口确认是冲锋击杀时，从 player_death 恢复致命枪击。
-			char deathWeapon[64];
-			event.GetString("weapon", deathWeapon, sizeof(deathWeapon));
-			int deathType = event.GetInt("type", 0);
-			int deathAttacker = GetClientOfUserId(event.GetInt("attacker"));
-			if (SkillAdvanced_IsValidSurvivor(deathAttacker) &&
-				SkillAdvanced_IsChargerFirearm(deathWeapon, deathType) &&
-				SkillAdvanced_HasRecentChargerGunDamage(client, GetGameTime()))
-			{
-				SkillAdvanced_g_bChargerGunLethal[client] = true;
-				SkillAdvanced_g_bChargerGunLethalDuringCharge[client] = true;
-				SkillAdvanced_g_iChargerGunLethalAttacker[client] = deathAttacker;
-			}
-		}
-
 		if (SkillAdvanced_g_bChargerGunLethal[client])
 		{
 			int attacker = GetClientOfUserId(event.GetInt("attacker"));
@@ -1543,7 +1511,6 @@ void SkillAdvanced_BeginChargerCharge(int charger)
 	SkillAdvanced_g_bChargerChargeHitTarget[charger] = false;
 	SkillAdvanced_g_bChargerChargeActive[charger] = true;
 	SkillAdvanced_g_fChargerChargeStart[charger] = now;
-	SkillAdvanced_g_fChargerChargeEndGrace[charger] = 0.0;
 }
 
 void SkillAdvanced_EndChargerCharge(int charger, bool hitTarget = false)
@@ -1555,11 +1522,10 @@ void SkillAdvanced_EndChargerCharge(int charger, bool hitTarget = false)
 
 	if (hitTarget)
 	{
-		// The game can leave m_isCharging set for a few frames after impact.
-		// Lock this charge out so post-impact shots are not reported as a
-		// charger kill while charging. The lock is cleared by the next charge.
-		SkillAdvanced_ResetChargerGunState(charger);
+		// Keep already confirmed lethal damage while closing this charge now.
 		SkillAdvanced_g_bChargerChargeHitTarget[charger] = true;
+		SkillAdvanced_g_bChargerChargeActive[charger] = false;
+		SkillAdvanced_g_fChargerChargeStart[charger] = 0.0;
 		return;
 	}
 
@@ -1568,8 +1534,9 @@ void SkillAdvanced_EndChargerCharge(int charger, bool hitTarget = false)
 		return;
 	}
 
-	SkillAdvanced_g_fChargerChargeEndGrace[charger] = GetGameTime() +
-		SkillAdvanced_CHARGER_TEAMKILL_CHARGE_GRACE;
+	SkillAdvanced_g_bChargerChargeActive[charger] = false;
+	SkillAdvanced_g_bChargerChargeHitTarget[charger] = true;
+	SkillAdvanced_g_fChargerChargeStart[charger] = 0.0;
 }
 
 bool SkillAdvanced_IsChargerChargeWindow(int charger, float now)
@@ -1585,47 +1552,12 @@ bool SkillAdvanced_IsChargerChargeWindow(int charger, float now)
 	if (now - SkillAdvanced_g_fChargerChargeStart[charger] > SkillAdvanced_CHARGER_TEAMKILL_MAX_CHARGE_TIME)
 	{
 		SkillAdvanced_g_bChargerChargeActive[charger] = false;
+		SkillAdvanced_g_bChargerChargeHitTarget[charger] = true;
 		SkillAdvanced_g_fChargerChargeStart[charger] = 0.0;
-		SkillAdvanced_g_fChargerChargeEndGrace[charger] = 0.0;
-		return false;
-	}
-
-	if (SkillAdvanced_g_fChargerChargeEndGrace[charger] > 0.0 &&
-		now > SkillAdvanced_g_fChargerChargeEndGrace[charger])
-	{
-		SkillAdvanced_g_bChargerChargeActive[charger] = false;
-		SkillAdvanced_g_fChargerChargeStart[charger] = 0.0;
-		SkillAdvanced_g_fChargerChargeEndGrace[charger] = 0.0;
 		return false;
 	}
 
 	return true;
-}
-
-bool SkillAdvanced_HasChargerGunDamage(int charger)
-{
-	if (charger <= 0 || charger > MaxClients)
-	{
-		return false;
-	}
-
-	for (int survivor = 1; survivor <= MaxClients; survivor++)
-	{
-		if (SkillAdvanced_g_iChargerGunDamage[charger][survivor] > 0)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
-bool SkillAdvanced_HasRecentChargerGunDamage(int charger, float now)
-{
-	return SkillAdvanced_HasChargerGunDamage(charger) &&
-		SkillAdvanced_g_bChargerGunTracking[charger] &&
-		SkillAdvanced_g_fChargerLastChargingGun[charger] > 0.0 &&
-		now - SkillAdvanced_g_fChargerLastChargingGun[charger] <= SkillAdvanced_CHARGER_TEAMKILL_DEATH_GRACE;
 }
 
 int SkillAdvanced_GetZombieClass(int client)
@@ -1735,7 +1667,6 @@ void SkillAdvanced_ResetChargerGunState(int client)
 	SkillAdvanced_g_bChargerChargeActive[client] = false;
 	SkillAdvanced_g_bChargerChargeHitTarget[client] = false;
 	SkillAdvanced_g_fChargerChargeStart[client] = 0.0;
-	SkillAdvanced_g_fChargerChargeEndGrace[client] = 0.0;
 
 	for (int survivor = 1; survivor <= MaxClients; survivor++)
 	{
