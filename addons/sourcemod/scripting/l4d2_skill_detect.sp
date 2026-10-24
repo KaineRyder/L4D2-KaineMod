@@ -730,6 +730,7 @@ public void OnPluginEnd()
 }
 
 bool g_bAvailable_l4d2_kills_manager;
+bool g_bAvailable_jockey_pounce_damage;
 public void OnAllPluginsLoaded()
 {
 	g_hCvarMaxPounceDistance = FindConVar("z_pounce_damage_range_max");
@@ -740,16 +741,19 @@ public void OnAllPluginsLoaded()
 	if ( g_hCvarMaxPounceDamage == null ) 	{ g_hCvarMaxPounceDamage = CreateConVar( "z_hunter_max_pounce_bonus_damage",  	"24", 		"Not available on this server, added by l4d2_skill_detect.", FCVAR_NONE, true, 0.0, false ); }
 
 	g_bAvailable_l4d2_kills_manager = LibraryExists("l4d2_kills_manager");
+	g_bAvailable_jockey_pounce_damage = LibraryExists("jockey_pounce_damage");
 }
 
 public void OnLibraryAdded(const char[] name)
 {
 	g_bAvailable_l4d2_kills_manager = LibraryExists("l4d2_kills_manager");
+	g_bAvailable_jockey_pounce_damage = LibraryExists("jockey_pounce_damage");
 }
 
 public void OnLibraryRemoved(const char[] name)
 {
 	g_bAvailable_l4d2_kills_manager = LibraryExists("l4d2_kills_manager");
+	g_bAvailable_jockey_pounce_damage = LibraryExists("jockey_pounce_damage");
 }
 
 void ConVarChanged_Cvars(ConVar hCvar, const char[] sOldVal, const char[] sNewVal)
@@ -4084,7 +4088,8 @@ void HandleHunterDP( int attacker,int victim, int actualDamage, float calculated
 void HandleJockeyDP( int attacker, int victim, float height )
 {
 	// report?
-	if (	g_bCvarReportEnable
+	if ( !g_bAvailable_jockey_pounce_damage
+		&& g_bCvarReportEnable
 		&&	(g_iCvarReportFlags & REP_JOCKEYDP)
 		&&	height >= g_hCvarJockeyDPThresh.FloatValue
 	) {
@@ -4109,6 +4114,56 @@ void HandleJockeyDP( int attacker, int victim, float height )
 	Call_PushFloat(height);
 	Call_PushCell( (height >= g_hCvarJockeyDPThresh.FloatValue) ? 1 : 0 );
 	Call_Finish();
+}
+
+public void OnJockeyPounceResolved(int attacker, int victim, float height, int damage)
+{
+	if (!g_bCvarReportEnable
+		|| !(g_iCvarReportFlags & REP_JOCKEYDP)
+		|| height < g_hCvarJockeyDPThresh.FloatValue)
+	{
+		return;
+	}
+
+	if (!IS_VALID_INGAME(attacker))
+	{
+		return;
+	}
+
+	bool hasVictim = IS_VALID_INGAME(victim);
+	bool showAttacker = hasVictim && !IsFakeClient(attacker);
+	char phrase[32];
+	if (damage > 0)
+	{
+		strcopy(phrase, sizeof(phrase), showAttacker ? "HandleJockeyDPDamage_1" : "HandleJockeyDPDamage_2");
+	}
+	else
+	{
+		strcopy(phrase, sizeof(phrase), showAttacker ? "HandleJockeyDP_1" : "HandleJockeyDP_2");
+	}
+
+	if (damage > 0)
+	{
+		if (showAttacker)
+		{
+			CPrintToChatAll("%t", phrase, attacker, victim, damage, RoundFloat(height));
+		}
+		else if (hasVictim)
+		{
+			CPrintToChatAll("%t", phrase, victim, damage, RoundFloat(height));
+		}
+	}
+	else
+	{
+		if (showAttacker)
+		{
+			CPrintToChatAll("%t", phrase, attacker, victim, RoundFloat(height));
+		}
+		else if (hasVictim)
+		{
+			CPrintToChatAll("%t", phrase, victim, RoundFloat(height));
+		}
+	}
 }
 
 // deathcharges

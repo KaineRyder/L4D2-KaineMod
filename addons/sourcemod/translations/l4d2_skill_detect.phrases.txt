@@ -620,6 +620,18 @@
 		"zho"		"{green}[高光操作]{default} {lightgreen}★★ {green}Jockey{default} 高空騎到 {olive}%N{default} 的臉上 (高度 {green}%i{default})."
 		"chi"		"{green}[高光操作]{default} {lightgreen}★★ {green}Jockey{default} 高空骑到 {olive}%N{default} 的脸上 (高度 {green}%i{default})."
 	}
+	"HandleJockeyDPDamage_1"
+	{
+		"en"		"{lightgreen}★★ {green}%N{default} jockey high-pounced {olive}%N{default} ({lightgreen}%i{default} bonus dmg, height: {green}%i{default})."
+		"zho"		"{green}[高光操作]{default} {lightgreen}★★ {green}%N{default} 高空騎到 {olive}%N{default} 的臉上 ({lightgreen}%i{default} 額外傷害，高度 {green}%i{default})."
+		"chi"		"{green}[高光操作]{default} {lightgreen}★★ {green}%N{default} 高空骑到 {olive}%N{default} 的脸上 ({lightgreen}%i{default} 额外伤害，高度 {green}%i{default})."
+	}
+	"HandleJockeyDPDamage_2"
+	{
+		"en"		"{lightgreen}★★ {green}A Jockey{default} high-pounced {olive}%N{default} ({lightgreen}%i{default} bonus dmg, height: {green}%i{default})."
+		"zho"		"{green}[高光操作]{default} {lightgreen}★★ {green}Jockey{default} 高空騎到 {olive}%N{default} 的臉上 ({lightgreen}%i{default} 額外傷害，高度 {green}%i{default})."
+		"chi"		"{green}[高光操作]{default} {lightgreen}★★ {green}Jockey{default} 高空骑到 {olive}%N{default} 的脸上 ({lightgreen}%i{default} 额外伤害，高度 {green}%i{default})."
+	}
 	"HandleDeathCharge_1"
 	{
 		"en"		"{lightgreen}★★★★ {green}%N{default} death-charged {olive}%N{default} (height: {green}%i{default})."
