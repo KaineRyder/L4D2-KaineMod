@@ -129,6 +129,9 @@ static ConVar
     g_hCvarPillFlowSeparation = null,
     g_hCvarPillFlowFinale = null,
     g_hCvarPillFlowVisualize = null,
+    g_hCvarRandomVomitJar = null,
+    g_hCvarVomitJarFlowMin = null,
+    g_hCvarVomitJarFlowMax = null,
     g_hCvarLimits[ItemList_Size] = {null, ...}; // CVAR Handle Array for item limits
 
 static bool
@@ -154,6 +157,9 @@ void IT_OnModuleStart()
     g_hCvarPillFlowSeparation = CreateConVarEx("pills_flow_separation", "0", "Minimum flow-fraction gap between two kept pill spawns (0.05 = 5% of map flow). Of a too-close pair the earlier spawn wins. 0 = no separation enforced.", _, true, 0.0, true, 1.0);
     g_hCvarPillFlowFinale = CreateConVarEx("pills_flow_finale", "0", "Apply the pill flow window on finale maps. 0 = finales exempt.", _, true, 0.0, true, 1.0);
     g_hCvarPillFlowVisualize = CreateConVarEx("pills_flow_visualize", "0", "Debug: 1 = don't remove pills, glow instead: white = kept, red = outside flow window, orange = too close to previous pill, cyan = over the pills limit. 2 = remove as normal, then glow the surviving pills white.", _, true, 0.0, true, 2.0);
+    g_hCvarRandomVomitJar = CreateConVarEx("vomitjar_randomspawn", "0", "Spawn one randomized bile jar within the pills flow window each round.", _, true, 0.0, true, 1.0);
+    g_hCvarVomitJarFlowMin = CreateConVarEx("vomitjar_flow_min", "0.30", "Minimum map flow fraction for the randomized bile jar spawn.", _, true, 0.0, true, 1.0);
+    g_hCvarVomitJarFlowMax = CreateConVarEx("vomitjar_flow_max", "0.80", "Maximum map flow fraction for the randomized bile jar spawn.", _, true, 0.0, true, 1.0);
 
     char sNameBuf[64], sCvarDescBuf[256];
     // Create itemlimit cvars
@@ -260,6 +266,8 @@ static void EnumAndElimSpawns()
         LogMessage("[%s] Resetting g_iSaferoomCount and Enumerating and eliminating spawns...", IT_MODULE_NAME);
     }
 
+    // ZoneMod removes map-authored bile spawns. Add one controlled spawn each half instead.
+    SpawnRandomVomitJar();
     EnumerateSpawns();
     g_bPillLimitHandled = ApplyPillFlowFilter();
     RemoveToLimits();
@@ -269,6 +277,8 @@ static void GenerateStoredSpawns()
 {
     KillRegisteredItems();
     SpawnItems();
+    // ItemTracking normally mirrors item locations between versus halves. Re-roll bile only.
+    SpawnRandomVomitJar();
 
     // Repaint glows on the respawned entities.
     if (g_hCvarPillFlowVisualize.IntValue > 0) {
@@ -357,6 +367,11 @@ static void SpawnItems()
 
         for (int idx = 0; idx < arrsize; idx++) {
             g_hItemSpawns[itemidx].GetArray(idx, curitem, sizeof(curitem));
+
+            // Bile is re-rolled by GenerateStoredSpawns instead of using its saved position.
+            if (itemidx == IL_VomitJar) {
+                continue;
+            }
 
             GetSpawnOrigins(origins, curitem);
             GetSpawnAngles(angles, curitem);
@@ -518,6 +533,111 @@ static float PF_GetSetting(const char[] sKey, ConVar hCvar)
     }
 
     return hCvar.FloatValue;
+}
+
+static bool GetRandomVomitJarOrigin(float vOrigin[3])
+{
+    float fFlowMin = g_hCvarVomitJarFlowMin.FloatValue;
+    float fFlowMax = g_hCvarVomitJarFlowMax.FloatValue;
+    float fMaxFlow = L4D2Direct_GetMapMaxFlowDistance();
+
+    if (fFlowMin < 0.0 || fFlowMax > 1.0 || fFlowMax < fFlowMin || fMaxFlow <= 0.0) {
+        return false;
+    }
+
+    ArrayList hNavAreas = new ArrayList();
+    ArrayList hCandidates = new ArrayList();
+    L4D_GetAllNavAreas(hNavAreas);
+
+    for (int i = 0; i < hNavAreas.Length; i++) {
+        Address pArea = hNavAreas.Get(i);
+        float fFlow = L4D2Direct_GetTerrorNavAreaFlow(pArea);
+        if (fFlow < 0.0) {
+            continue;
+        }
+
+        float fFlowPct = fFlow / fMaxFlow;
+        if (fFlowPct >= fFlowMin && fFlowPct <= fFlowMax) {
+            hCandidates.Push(i);
+        }
+    }
+
+    bool bFound = hCandidates.Length > 0;
+    if (bFound) {
+        int iCandidate = hCandidates.Get(GetRandomInt(0, hCandidates.Length - 1));
+        Address pArea = hNavAreas.Get(iCandidate);
+        L4D_GetNavAreaCenter(pArea, vOrigin);
+    }
+
+    delete hCandidates;
+    delete hNavAreas;
+    return bFound;
+}
+
+static bool SnapVomitJarOriginToGround(float vOrigin[3])
+{
+    float vStart[3], vEnd[3];
+    vStart[0] = vEnd[0] = vOrigin[0];
+    vStart[1] = vEnd[1] = vOrigin[1];
+    vStart[2] = vOrigin[2] + 32.0;
+    vEnd[2] = vOrigin[2] - 128.0;
+
+    TR_TraceRay(vStart, vEnd, MASK_SOLID_BRUSHONLY, RayType_EndPoint);
+    if (!TR_DidHit()) {
+        return false;
+    }
+
+    TR_GetEndPosition(vOrigin);
+    // Weapon spawn origins need a small lift above the nav floor to keep the supply model visible.
+    vOrigin[2] += 8.0;
+    return true;
+}
+
+static bool SpawnRandomVomitJar()
+{
+    if (!g_hCvarRandomVomitJar.BoolValue) {
+        return false;
+    }
+
+    float vOrigin[3];
+    float fFlowMin = g_hCvarVomitJarFlowMin.FloatValue;
+    float fFlowMax = g_hCvarVomitJarFlowMax.FloatValue;
+    if (!GetRandomVomitJarOrigin(vOrigin)) {
+        LogError("[%s] Could not find a nav area between %.0f%% and %.0f%% flow for the bile spawn.",
+            IT_MODULE_NAME,
+            fFlowMin * 100.0,
+            fFlowMax * 100.0);
+        return false;
+    }
+
+    if (!SnapVomitJarOriginToGround(vOrigin)) {
+        LogError("[%s] Could not find ground below the selected bile spawn area.", IT_MODULE_NAME);
+        return false;
+    }
+
+    int iEntity = CreateEntityByName("weapon_vomitjar_spawn");
+    if (iEntity == -1) {
+        LogError("[%s] Failed to create the round bile spawn.", IT_MODULE_NAME);
+        return false;
+    }
+
+    DispatchKeyValue(iEntity, "count", "1");
+    DispatchKeyValue(iEntity, "spawnflags", "2");
+    DispatchKeyValue(iEntity, "solid", "6");
+    DispatchKeyValue(iEntity, "model", "models/props/terror/ammo_stack.mdl");
+    DispatchKeyValue(iEntity, "disableshadows", "1");
+    DispatchKeyValueVector(iEntity, "origin", vOrigin);
+    DispatchKeyValue(iEntity, "angles", "0 0 0");
+    DispatchSpawn(iEntity);
+
+    if (IsDebugEnabled()) {
+        LogMessage("[%s] Added one bile spawn at %.1f %.1f %.1f (flow %.0f%%-%.0f%%).",
+            IT_MODULE_NAME, vOrigin[0], vOrigin[1], vOrigin[2],
+            fFlowMin * 100.0,
+            fFlowMax * 100.0);
+    }
+
+    return true;
 }
 
 // Returns true when the filter is active (= it owns the pills limit this round).
